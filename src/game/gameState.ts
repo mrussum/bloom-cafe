@@ -45,9 +45,12 @@ interface GameState {
   discoveredRecipes: string[];
   pendingStoryTrigger: string | null;
   lastMergePosition: [number, number] | null;
+  // userId is session-only — managed by Supabase auth, not persisted here
+  userId: string | null;
   mergeItems: (fromPos: [number, number], toPos: [number, number]) => boolean;
   spawnItem: (item: GridItem) => boolean;
   clearStoryTrigger: () => void;
+  setUserId: (id: string) => void;
   resetGame: () => void;
 }
 
@@ -61,6 +64,7 @@ export const useGameStore = create<GameState>()(
       discoveredRecipes: [],
       pendingStoryTrigger: null,
       lastMergePosition: null,
+      userId: null,
 
       mergeItems: (fromPos, toPos) => {
         const { grid, xp, discoveredRecipes } = get();
@@ -96,6 +100,8 @@ export const useGameStore = create<GameState>()(
 
       clearStoryTrigger: () => set({ pendingStoryTrigger: null }),
 
+      setUserId: (id) => set({ userId: id }),
+
       resetGame: () =>
         set({
           grid: makeInitialGrid(),
@@ -110,6 +116,16 @@ export const useGameStore = create<GameState>()(
     {
       name: 'bloom-game-state',
       storage: createJSONStorage(() => AsyncStorage),
+      // userId is derived from Supabase auth on each launch — don't persist it
+      partialize: (state) => ({
+        grid: state.grid,
+        xp: state.xp,
+        level: state.level,
+        cafeLevel: state.cafeLevel,
+        discoveredRecipes: state.discoveredRecipes,
+        pendingStoryTrigger: state.pendingStoryTrigger,
+        lastMergePosition: state.lastMergePosition,
+      }),
     },
   ),
 );

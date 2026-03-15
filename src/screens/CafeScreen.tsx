@@ -2,7 +2,7 @@
 // Bloom — The Fluffy Bunny Café
 // Main game screen: chalkboard header, merge grid, spawn buttons
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { v4 as uuidv4 } from 'uuid';
@@ -11,6 +11,8 @@ import { BASE_INGREDIENTS } from '../game/recipes';
 import type { GridItem, ItemCategory, ItemTier } from '../game/types';
 import { MergeGrid } from '../components/MergeGrid';
 import { StoryToast } from '../components/StoryToast';
+import { supabase } from '../services/supabase';
+import { useSave } from '../hooks/useSave';
 
 const XP_PER_LEVEL = 100;
 
@@ -25,6 +27,29 @@ export function CafeScreen() {
   const xp = useGameStore((s) => s.xp);
   const level = useGameStore((s) => s.level);
   const spawnItem = useGameStore((s) => s.spawnItem);
+  const userId = useGameStore((s) => s.userId);
+  const setUserId = useGameStore((s) => s.setUserId);
+
+  // Anonymous auth — resolves existing session or creates a new one.
+  // Fire-and-forget: game is fully playable while this resolves.
+  useEffect(() => {
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUserId(session.user.id);
+        } else {
+          const { data } = await supabase.auth.signInAnonymously();
+          if (data.user) setUserId(data.user.id);
+        }
+      } catch (err) {
+        console.warn('[bloom] auth failed silently:', err);
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-save every 60s + on background
+  useSave(userId);
 
   const xpProgress = (xp % XP_PER_LEVEL) / XP_PER_LEVEL;
 
