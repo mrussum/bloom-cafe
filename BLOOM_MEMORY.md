@@ -700,7 +700,7 @@ These help the next Claude feel continuous rather than starting fresh:
 
 ## 12. CURRENT STATUS
 
-### As of: 15 March 2026 — Session 2 Complete
+### As of: 15 March 2026 — Session 3 + Supabase Setup Complete
 
 ---
 
@@ -772,6 +772,23 @@ These help the next Claude feel continuous rather than starting fresh:
 
 ---
 
+#### Between Sessions — Supabase Setup (15 March 2026)
+**Supabase project details:**
+- Project URL: `https://pttmeaanzjtjxgnvgrup.supabase.co`
+- Anon key: stored in `.env` (never committed)
+- Region: as created on cloud.supabase.com
+
+**Actions taken:**
+- Created `.env` in project root with `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`
+- Patched `.gitignore` — added `.env` explicitly (was only covering `.env*.local` before, leaving plain `.env` exposed)
+- Verified with `git check-ignore -v .env` — confirmed ignored before writing credentials
+- Committed `.gitignore` update and pushed all 5 pending commits to GitHub
+- `.env` never appeared in `git status` — credentials are local-only ✅
+
+**Commit:** `f84e3d0 Add .env to .gitignore`
+
+---
+
 **CUMULATIVE DONE:**
 - ✅ Conceived the entire Bloom concept
 - ✅ Full world bible (characters, setting, lore)
@@ -787,22 +804,23 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ **Session 1:** types.ts, mergeEngine.ts, gameState.ts — zero TS errors
 - ✅ **Session 2:** MergeCell.tsx, MergeGrid.tsx, App.tsx — zero TS errors
 - ✅ **Session 3:** CafeScreen.tsx, StoryToast.tsx, App.tsx → CafeScreen — zero TS errors
+- ✅ **Supabase setup:** project created, .env written, .gitignore patched, all commits pushed to GitHub
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
 **NEXT SESSION (Session 4):**
-- `src/services/supabase.ts` — Supabase client, cloudSave (fire-and-forget), cloudLoad, never throw
+- `src/services/supabase.ts` — Supabase client (env vars already in .env), cloudSave (fire-and-forget), cloudLoad, never throw
 - `src/hooks/useSave.ts` — auto-save every 60s, save on AppState 'background', skip cloud if no userId
 - Anonymous auth on first launch: `supabase.auth.signInAnonymously()`, store userId in Zustand, wire useSave into CafeScreen
-- Supabase project must be created before this session (cloud.supabase.com)
+- Supabase project is READY — env vars configured ✅
 
 **OPEN QUESTIONS:**
 - Annie's response — will she say yes?
 - Studio name — nothing decided yet
 - Whether to pursue PC version alongside mobile or after
 - App name — "Bloom" is working title, confirm before App Store submission
-- Supabase project still needs to be created (needed for Session 4)
+- Supabase project created ✅ — URL and anon key in .env, ready for Session 4
 
 ---
 
