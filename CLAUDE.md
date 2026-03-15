@@ -103,10 +103,10 @@ BLOOM_ROWAN_OUTFIT_*   £0.99 each (character cosmetics)
 
 ### Current Build Status
 [ UPDATE THIS EACH SESSION ]
-- Phase: Game logic foundation
-- Last completed: src/game/types.ts, mergeEngine.ts, gameState.ts — zero TS errors
+- Phase: Merge grid UI
+- Last completed: MergeCell.tsx (pan gesture, lift animation, new-item pop), MergeGrid.tsx (5×4, shared-value grid origin, haptics on success/fail), App.tsx test harness — zero TS errors
 - In progress: —
-- Next task: UI layer — MergeGrid.tsx, MergeCell.tsx, CafeScreen.tsx
+- Next task: Session 3 — CafeScreen.tsx + StoryToast.tsx
 
 ### Writing Style Guide
 - Warm but never saccharine
