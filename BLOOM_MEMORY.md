@@ -805,15 +805,23 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ **Session 2:** MergeCell.tsx, MergeGrid.tsx, App.tsx — zero TS errors
 - ✅ **Session 3:** CafeScreen.tsx, StoryToast.tsx, App.tsx → CafeScreen — zero TS errors
 - ✅ **Supabase setup:** project created, .env written, .gitignore patched, all commits pushed to GitHub
+- ✅ **Session 4:** supabase.ts, useSave.ts, gameState userId, CafeScreen auth — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
-**NEXT SESSION (Session 4):**
-- `src/services/supabase.ts` — Supabase client (env vars already in .env), cloudSave (fire-and-forget), cloudLoad, never throw
-- `src/hooks/useSave.ts` — auto-save every 60s, save on AppState 'background', skip cloud if no userId
-- Anonymous auth on first launch: `supabase.auth.signInAnonymously()`, store userId in Zustand, wire useSave into CafeScreen
-- Supabase project is READY — env vars configured ✅
+**NEXT SESSION (Session 5):**
+- `src/services/purchases.ts` — RevenueCat setup, fetchOfferings, purchasePackage, restorePurchases
+- `src/screens/ShopScreen.tsx` — cosmetic themes, Rowan outfits, remove-ads purchase
+- Remove-ads logic: check entitlement in store, suppress ads if purchased
+- Need to create RevenueCat account + Expo config before this session
+
+**SESSION 4 LOG:**
+- `src/services/supabase.ts` — Supabase client (AsyncStorage session persistence via `as any` cast — it satisfies SupportedStorage but types don't align perfectly), `cloudSave` (fire-and-forget upsert, never throws), `cloudLoad` (returns null on any failure). SQL for `game_saves` table + RLS policy documented in file header.
+- `src/hooks/useSave.ts` — `storeRef` pattern: subscribes to Zustand store once, keeps a ref to latest SaveData so `save()` never needs recreating when game state changes. Auto-save every 60s via `setInterval`. Saves on `AppState 'background'` via event listener. Both cleaned up on unmount.
+- `src/game/gameState.ts` — Added `userId: string | null` and `setUserId(id)`. Added `partialize` to persist middleware to explicitly exclude `userId` from AsyncStorage (Supabase auth manages its own session persistence).
+- `src/screens/CafeScreen.tsx` — Anonymous auth IIFE in `useEffect([], [])`: checks for existing session first (survives restarts), only calls `signInAnonymously()` if no session found. Errors swallowed silently — game plays fine offline. `useSave(userId)` wired in.
+- **Commit:** `5e5464d Session 4 — save system complete`
 
 **OPEN QUESTIONS:**
 - Annie's response — will she say yes?

@@ -103,10 +103,10 @@ BLOOM_ROWAN_OUTFIT_*   £0.99 each (character cosmetics)
 
 ### Current Build Status
 [ UPDATE THIS EACH SESSION ]
-- Phase: Café scene
-- Last completed: CafeScreen.tsx (chalkboard header, XP bar, grid, spawn buttons), StoryToast.tsx (slide-up, line-by-line, Brigadier italic), App.tsx → CafeScreen — zero TS errors
+- Phase: Save system
+- Last completed: supabase.ts (client + cloudSave/cloudLoad), useSave.ts (60s + background), gameState userId, CafeScreen auth init — zero TS errors
 - In progress: —
-- Next task: Session 4 — save system (supabase.ts, useSave.ts, anonymous auth)
+- Next task: Session 5 — RevenueCat IAP (purchases.ts, ShopScreen, remove-ads logic)
 
 ### Writing Style Guide
 - Warm but never saccharine
