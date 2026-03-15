@@ -1,18 +1,12 @@
-// App.tsx — Session 2 test harness
-// Renders MergeGrid on a cream background
-
+// App.tsx
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
-import { MergeGrid } from './src/components/MergeGrid';
+import { StyleSheet } from 'react-native';
+import { CafeScreen } from './src/screens/CafeScreen';
 
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <StatusBar style="dark" />
-      <View style={styles.bg}>
-        <MergeGrid />
-      </View>
+      <CafeScreen />
     </GestureHandlerRootView>
   );
 }
@@ -20,10 +14,5 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-  },
-  bg: {
-    flex: 1,
-    backgroundColor: '#fdf6e9',
-    justifyContent: 'center',
   },
 });
