@@ -360,6 +360,165 @@ npx tsc --noEmit
 
 Show me the result.
 ```
+SESSION ONE COMPLETE:
+
+Read CLAUDE.md carefully before doing anything else.
+
+Your task for this session is to build the complete game logic 
+foundation — no UI, no screens, no components. Only the files 
+inside src/game/.
+
+Please complete these files in this exact order:
+
+1. src/game/types.ts
+   - GridItem interface (id, type, tier, category, emoji, 
+     assetKey, isNew, isLocked)
+   - Grid type (GridItem | null)[][]
+   - Recipe interface (inputs tuple, output, outputTier, 
+     outputCategory, emoji, displayName, npcTrigger?)
+   - MergeResult interface (newGrid, mergedItem, 
+     clearedPositions, newItemPosition, xpGained, storyTrigger?)
+   - ItemCategory and ItemTier types
+   - DialogueBeat and DialogueLine interfaces (from npcs.ts)
+
+2. src/game/mergeEngine.ts
+   - attemptMerge(grid, fromPos, toPos) → MergeResult | null
+   - findEmptyCell(grid) → [number, number] | null
+   - hasAvailableMerges(grid) → boolean
+   - All functions pure and immutable — no side effects
+   - Import recipes from ./recipes
+
+3. src/game/gameState.ts
+   - Zustand store with AsyncStorage persistence
+   - State: grid (5×4), xp, level, cafeLevel, 
+     discoveredRecipes, pendingStoryTrigger, lastMergePosition
+   - Actions: mergeItems, spawnItem, clearStoryTrigger, resetGame
+   - mergeItems calls attemptMerge and returns boolean
+   - spawnItem places item in first empty cell
+   - Initial grid: 4 starter items from BASE_INGREDIENTS
+
+The recipes.ts and npcs.ts files already exist — import from them, 
+do not rewrite them.
+
+After completing all three files, run the TypeScript compiler 
+to confirm zero errors:
+npx tsc --noEmit
+
+Show me the result.
+```
+Let me start by reading CLAUDE.md and then exploring the existing files to understand the project structure.
+
+Read c:\Users\Michael\bloom-cafe\CLAUDE.md
+Globpattern: "src/game/**/*"
+Found 1 file
+Globpattern: "**/*.ts"
+Found 2 files
+Read c:\Users\Michael\bloom-cafe\src\game\recipes.ts
+Read c:\Users\Michael\bloom-cafe\src\game\npcs.ts
+Now I have a clear picture of the existing files. Let me also check the tsconfig and package.json to understand the project setup.
+
+Now let me check the TypeScript config and package.json.
+
+Read c:\Users\Michael\bloom-cafe\tsconfig.json
+Read c:\Users\Michael\bloom-cafe\package.json
+Now I have everything I need. Let me create the three files:
+
+src/game/types.ts - Types file
+src/game/mergeEngine.ts - Merge engine
+src/game/gameState.ts - Zustand store
+Note: recipes.ts already defines Recipe interface and exports it, and npcs.ts already defines DialogueBeat and DialogueLine. The task says to import from them, not rewrite.
+
+For types.ts, I need to:
+
+GridItem interface (id, type, tier, category, emoji, assetKey, isNew, isLocked)
+
+Grid type as a 2D array of GridItem or null
+
+MergeResult interface
+
+ItemCategory and ItemTier types
+
+Import Recipe from recipes.ts, and DialogueBeat/DialogueLine from npcs.ts, then re-export them all from types.ts
+
+For the module structure, types.ts should be the central export point, mergeEngine.ts imports from recipes and types, and gameState.ts pulls from types, mergeEngine, and recipes. Now I'm looking at the Zustand v5 setup with AsyncStorage persistence...
+
+Setting up the store configuration...
+
+For the grid items themselves, I need to define the shape carefully—each item has a type identifier, a tier level from 1 to 6, a category like herb or vegetable, an emoji for display, and optional fields for asset references and state flags like whether it's newly placed or locked.
+
+The MergeResult type needs to capture what happens when two items combine: the updated grid, the resulting merged item, which positions got cleared, where the new item ends up, experience points earned, and potentially a story event that triggers.
+
+For the merge logic, I'm working with a 5x4 grid and need to validate that the two positions are different, fetch the items at each location, then check if they're compatible for merging.
+
+Looking at the recipe system more carefully, merges are defined by specific input pairs, so I need to match the items at both positions against the recipe database in either order. If there's a match, I'll create the merged item, clear both source positions, place the result at the target position, and calculate XP based on the output tier.
+
+Now I'm setting up the game state file with Zustand v5 and AsyncStorage persistence...
+
+Defining the type system... Writing the merge engine... Building the merge result... Setting up the game state store with Zustand and persistence, initializing a 5x4 grid with starter ingredients placed randomly. Setting up the game store with Zustand, defining the merge and spawn mechanics, and initializing the XP system that converts experience points to levels... Finishing up the store actions with methods to spawn items on empty grid cells, clear story triggers, and reset the game state back to initial conditions.
+
+Now I'm thinking through some TypeScript type mismatches I need to handle—the recipe output tier and category are typed as generic number and string in the data, but my store expects them to be the specific union types ItemTier and ItemCategory, so I'll need to cast those values when creating items from recipes.
+
+For the discovered recipes logic, I should check if the merged item type is already in the array before adding it to avoid duplicates. I'm also verifying the zustand v5 API for the persist middleware and confirming that AsyncStorage is properly imported as the default export from the React Native package, and that the middleware imports come from zustand/middleware.
+
+Now I'm defining the ItemCategory type as a union of all possible categories from both the base ingredients and recipes—combining herb, vegetable, dry, dairy, fruit, rare, pastry, sauce, preserve, spice, dough, dish, signature, special, and legendary. For the GridItem component, I need to make sure the assetKey uses the item's id correctly.
+
+I should also handle the re-exports in types.ts—since Recipe, DialogueBeat, and DialogueLine are already defined in their respective files, I'll re-export them from types.ts so consumers have a single entry point for all type definitions.
+
+For ItemTier, I'm going to use a numeric literal union type like 1 | 2 | 3 | 4 | 5 | 6 to enforce type safety, even though it means casting when working with recipe data that uses plain numbers.
+
+Now I need to verify the grid dimensions—it's 5 rows by 4 columns according to the spec—and make sure the initialization is correct. I should also confirm that zustand v5 still handles the persist middleware the same way it did before, then I can write out all the files.
+
+Good, I have everything I need. Let me write the three files now.
+
+Write c:\Users\Michael\bloom-cafe\src\game\types.ts
+49 lines
+Write c:\Users\Michael\bloom-cafe\src\game\mergeEngine.ts
+84 lines
+Write c:\Users\Michael\bloom-cafe\src\game\gameState.ts
+116 lines
+Now run the TypeScript compiler:
+
+Bash
+IN
+cd "c:\Users\Michael\bloom-cafe" && npx tsc --noEmit 2>&1
+
+OUT
+Command running in background with ID: ba6ipdt4i. Output is being written to: C:\Users\Michael\AppData\Local\Temp\claude\c--Users-Michael-bloom-cafe\3e50a9f0-8a68-448f-8e74-a7c9a9823f3a\tasks\ba6ipdt4i.output
+TaskOutput task: "ba6ipdt4i"
+OUT
+<retrieval_status>success</retrieval_status>
+
+<task_id>ba6ipdt4i</task_id>
+
+<task_type>local_bash</task_type>
+
+<status>completed</status>
+
+<exit_code>0</exit_code>
+npx tsc --noEmit exited with 0 errors.
+
+Here's what was built:
+
+src/game/types.ts — GridItem, Grid, MergeResult, ItemCategory, ItemTier defined here; Recipe, DialogueBeat, DialogueLine re-exported from their source files.
+
+src/game/mergeEngine.ts — Three pure functions:
+
+attemptMerge — looks up a matching recipe for both input items (order-insensitive), returns an immutable MergeResult or null
+findEmptyCell — scans row-first, returns first null cell
+hasAvailableMerges — handles same-input recipes (needs ≥2 copies) vs distinct-input recipes
+src/game/gameState.ts — Zustand store persisted to AsyncStorage:
+
+5×4 grid initialised with the first 4 BASE_INGREDIENTS (basil, tomato, flour, butter)
+mergeItems delegates to attemptMerge, accumulates XP, tracks discovered recipes and story triggers
+spawnItem finds the first empty cell and places the item there
+clearStoryTrigger / resetGame are straightforward setters
+Now let me update CLAUDE.md with the current build status.
+
+Edit c:\Users\Michael\bloom-cafe\CLAUDE.md
+Modified
+The task already completed with exit code 0, which I already reported to the user. This notification is redundant - I already retrieved the output and reported the result.
+
+Already retrieved — the output file was empty (no errors), confirming the exit code 0 result I reported above. We're good.
 
 ### Session 2 — Merge Grid UI
 ```
@@ -541,35 +700,74 @@ These help the next Claude feel continuous rather than starting fresh:
 
 ## 12. CURRENT STATUS
 
-### As of: 15 March 2026 — End of Day 1
+### As of: 15 March 2026 — Session 2 Complete
 
-**DONE TODAY:**
+---
+
+### SESSION LOG
+
+#### Session 1 — Game Logic Foundation (15 March 2026)
+**Files created:**
+- `src/game/types.ts` — GridItem, Grid, MergeResult, ItemCategory, ItemTier; re-exports Recipe, DialogueBeat, DialogueLine from their source files
+- `src/game/mergeEngine.ts` — three pure functions: attemptMerge (order-insensitive recipe lookup, immutable result), findEmptyCell (row-first scan), hasAvailableMerges (handles same/distinct input recipes)
+- `src/game/gameState.ts` — Zustand store with AsyncStorage persistence; 5×4 grid initialised with first 4 BASE_INGREDIENTS; mergeItems, spawnItem, clearStoryTrigger, resetGame actions; XP → level derivation
+
+**Result:** `npx tsc --noEmit` → exit 0, zero errors
+**Commit:** `db9b10c Session 1 — game logic foundation complete`
+
+---
+
+#### Session 2 — Merge Grid UI (15 March 2026)
+**Files created:**
+- `src/components/MergeCell.tsx`
+  - `Gesture.Pan()` from react-native-gesture-handler v2
+  - Drag lifts cell to scale(1.12), springs back on release or cancel (onFinalize handles both cases)
+  - New-item pop animation: `withSequence(spring(1.22), spring(1))` fires when `item?.id` changes and `item.isNew` is true
+  - Drop target calculated from `e.absoluteX/Y` minus grid page origin (stored as `SharedValue<number>` — always reads live value in worklet)
+  - Receives `gridPageX: SharedValue<number>` and `gridPageY: SharedValue<number>` as props from MergeGrid
+  - Visual: cream cell (#FFF8F0), tier colour badge (bottom-right), emoji scales to 40% of cell size
+  - `zIndex: 20` while lifted so dragged item renders above grid siblings
+
+- `src/components/MergeGrid.tsx`
+  - 5×4 grid, fills phone width minus 20px each side (capped at 380px)
+  - Measures own absolute page position via `ref.measure` on `onLayout`, writes to shared values
+  - `handleDrop` stable via `useCallback([mergeItems])` — Zustand action is stable so this never re-creates
+  - Successful merge → `Haptics.impactAsync(ImpactFeedbackStyle.Medium)`
+  - Failed merge → `Haptics.notificationAsync(NotificationFeedbackType.Warning)`
+
+- `App.tsx` (updated)
+  - `GestureHandlerRootView` wrapping — required for RNGH v2 to function
+  - Cream `#fdf6e9` background, grid centred vertically, ready for device testing
+
+**Result:** `npx tsc --noEmit` → exit 0, zero errors (confirmed by two separate compiler runs)
+**Commits:**
+- `857f6d7 Session 2 — merge grid UI complete`
+- `2a49291 Update CLAUDE.md build status after Session 2`
+
+---
+
+**CUMULATIVE DONE:**
 - ✅ Conceived the entire Bloom concept
 - ✅ Full world bible (characters, setting, lore)
 - ✅ Complete recipe tree (Tiers 1–6, 42 recipes, all story beats)
 - ✅ Full NPC dialogue system (all beats written)
 - ✅ LGBTQ+ representation layer designed
 - ✅ CLAUDE.md written
-- ✅ recipes.ts written
-- ✅ npcs.ts written
+- ✅ recipes.ts + npcs.ts written
 - ✅ Co-founder proposal sent to Annie Scholfield
-- ✅ Steam festival calendar researched
-- ✅ 24-week build plan created
-- ✅ Technical architecture designed
-- ✅ GitHub repository created (github.com/mrussum/bloom-cafe)
-- ✅ Expo project created and dependencies installed
-- ✅ All files committed and pushed to GitHub
+- ✅ GitHub repository: github.com/mrussum/bloom-cafe
+- ✅ Expo project created, all dependencies installed
 - ✅ Claude Code installed and working in VS Code
-- ✅ Windows 10 environment fully set up
+- ✅ **Session 1:** types.ts, mergeEngine.ts, gameState.ts — zero TS errors
+- ✅ **Session 2:** MergeCell.tsx, MergeGrid.tsx, App.tsx — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
-- 🎮 About to run Claude Code Session 1
 
-**NEXT:**
-- Run Session 1 prompt in Claude Code
-- Complete game logic foundation (types.ts, mergeEngine.ts, gameState.ts)
-- Report back and continue with Session 2
+**NEXT SESSION (Session 3):**
+- `src/screens/CafeScreen.tsx` — warm cream gradient bg, café title, XP bar, MergeGrid, spawn buttons
+- `src/components/StoryToast.tsx` — slides up from bottom when pendingStoryTrigger fires, parchment style, tap to dismiss, Brigadier lines in italic with no speaker label
+- Update `App.tsx` to render CafeScreen
 
 **OPEN QUESTIONS:**
 - Annie's response — will she say yes?
