@@ -103,10 +103,10 @@ BLOOM_ROWAN_OUTFIT_*   £0.99 each (character cosmetics)
 
 ### Current Build Status
 [ UPDATE THIS EACH SESSION ]
-- Phase: Merge grid UI
-- Last completed: MergeCell.tsx (pan gesture, lift animation, new-item pop), MergeGrid.tsx (5×4, shared-value grid origin, haptics on success/fail), App.tsx test harness — zero TS errors
+- Phase: Café scene
+- Last completed: CafeScreen.tsx (chalkboard header, XP bar, grid, spawn buttons), StoryToast.tsx (slide-up, line-by-line, Brigadier italic), App.tsx → CafeScreen — zero TS errors
 - In progress: —
-- Next task: Session 3 — CafeScreen.tsx + StoryToast.tsx
+- Next task: Session 4 — save system (supabase.ts, useSave.ts, anonymous auth)
 
 ### Writing Style Guide
 - Warm but never saccharine

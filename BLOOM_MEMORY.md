@@ -746,6 +746,32 @@ These help the next Claude feel continuous rather than starting fresh:
 
 ---
 
+#### Session 3 — Café Scene (15 March 2026)
+**Files created:**
+- `src/screens/CafeScreen.tsx`
+  - `LinearGradient` background (#fdf6e9 → #f5e6cc)
+  - Chalkboard header strip (#2D3B2D): café title in chalk-white, level badge in amber-green, XP bar (dark track, #D4E870 fill via flex proportion)
+  - MergeGrid centred with soft drop shadow
+  - 3 spawn buttons (Basil 🌿, Tomato 🍅, Flour 🌾) — cream cards with pressed state
+  - StoryToast rendered outside SafeAreaView (absolute, always mounted)
+
+- `src/components/StoryToast.tsx`
+  - Always mounted (never returns null) — starts off-screen at translateY=300, opacity=0
+  - `useSharedValue` + `withSpring`/`withTiming` for slide-in/slide-out
+  - `slideOut` uses Reanimated callback + `runOnJS` to call `clearStoryTrigger` after animation
+  - Line-by-line tap advance; final tap triggers slide-out then store clear
+  - Brigadier: no speaker label rendered, all text italic (action-only by design)
+  - Other characters: coloured speaker label (Rowan blue, Linda terracotta, Alo green, Trixie purple)
+  - `pointerEvents={activeBeat ? 'auto' : 'none'}` so invisible toast doesn't block touches
+
+- `App.tsx` (updated)
+  - Now renders `<CafeScreen />` — full game screen live
+
+**Result:** `npx tsc --noEmit` → exit 0, zero errors
+**Commit:** `77c167b Session 3 — café scene complete`
+
+---
+
 **CUMULATIVE DONE:**
 - ✅ Conceived the entire Bloom concept
 - ✅ Full world bible (characters, setting, lore)
@@ -760,14 +786,16 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ Claude Code installed and working in VS Code
 - ✅ **Session 1:** types.ts, mergeEngine.ts, gameState.ts — zero TS errors
 - ✅ **Session 2:** MergeCell.tsx, MergeGrid.tsx, App.tsx — zero TS errors
+- ✅ **Session 3:** CafeScreen.tsx, StoryToast.tsx, App.tsx → CafeScreen — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
-**NEXT SESSION (Session 3):**
-- `src/screens/CafeScreen.tsx` — warm cream gradient bg, café title, XP bar, MergeGrid, spawn buttons
-- `src/components/StoryToast.tsx` — slides up from bottom when pendingStoryTrigger fires, parchment style, tap to dismiss, Brigadier lines in italic with no speaker label
-- Update `App.tsx` to render CafeScreen
+**NEXT SESSION (Session 4):**
+- `src/services/supabase.ts` — Supabase client, cloudSave (fire-and-forget), cloudLoad, never throw
+- `src/hooks/useSave.ts` — auto-save every 60s, save on AppState 'background', skip cloud if no userId
+- Anonymous auth on first launch: `supabase.auth.signInAnonymously()`, store userId in Zustand, wire useSave into CafeScreen
+- Supabase project must be created before this session (cloud.supabase.com)
 
 **OPEN QUESTIONS:**
 - Annie's response — will she say yes?
