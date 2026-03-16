@@ -2,7 +2,7 @@
 // Bloom — The Fluffy Bunny Café
 // Main game screen: chalkboard header, merge grid, spawn buttons
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,6 +13,8 @@ import { MergeGrid } from '../components/MergeGrid';
 import { StoryToast } from '../components/StoryToast';
 import { supabase } from '../services/supabase';
 import { useSave } from '../hooks/useSave';
+import { checkRemoveAds } from '../services/purchases';
+import { ShopScreen } from './ShopScreen';
 
 const XP_PER_LEVEL = 100;
 
@@ -29,6 +31,8 @@ export function CafeScreen() {
   const spawnItem = useGameStore((s) => s.spawnItem);
   const userId = useGameStore((s) => s.userId);
   const setUserId = useGameStore((s) => s.setUserId);
+  const setHasRemovedAds = useGameStore((s) => s.setHasRemovedAds);
+  const [shopOpen, setShopOpen] = useState(false);
 
   // Anonymous auth — resolves existing session or creates a new one.
   // Fire-and-forget: game is fully playable while this resolves.
@@ -46,6 +50,11 @@ export function CafeScreen() {
         console.warn('[bloom] auth failed silently:', err);
       }
     })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync remove-ads entitlement on mount (catches purchases made on other devices)
+  useEffect(() => {
+    checkRemoveAds().then((val) => { if (val) setHasRemovedAds(val); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save every 60s + on background
@@ -77,8 +86,13 @@ export function CafeScreen() {
         <View style={styles.chalkboard}>
           <View style={styles.headerRow}>
             <Text style={styles.cafeTitle}>The Fluffy Bunny 🐰</Text>
-            <View style={styles.levelBadge}>
-              <Text style={styles.levelText}>Lv {level}</Text>
+            <View style={styles.headerRight}>
+              <View style={styles.levelBadge}>
+                <Text style={styles.levelText}>Lv {level}</Text>
+              </View>
+              <Pressable onPress={() => setShopOpen(true)} style={styles.shopButton}>
+                <Text style={styles.shopButtonText}>🛍️</Text>
+              </Pressable>
             </View>
           </View>
 
@@ -119,6 +133,9 @@ export function CafeScreen() {
 
       {/* Story toast — absolutely positioned, always mounted for smooth animation */}
       <StoryToast />
+
+      {/* Shop modal */}
+      <ShopScreen visible={shopOpen} onClose={() => setShopOpen(false)} />
     </LinearGradient>
   );
 }
@@ -157,6 +174,11 @@ const styles = StyleSheet.create({
     color: '#F5F0E8',
     letterSpacing: 0.3,
   },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   levelBadge: {
     backgroundColor: '#D4E870',
     paddingHorizontal: 10,
@@ -167,6 +189,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#2D3B2D',
+  },
+  shopButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#3D5C3D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shopButtonText: {
+    fontSize: 16,
   },
   xpTrack: {
     flexDirection: 'row',

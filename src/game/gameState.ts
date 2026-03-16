@@ -47,10 +47,13 @@ interface GameState {
   lastMergePosition: [number, number] | null;
   // userId is session-only — managed by Supabase auth, not persisted here
   userId: string | null;
+  // hasRemovedAds is persisted — survives app restarts
+  hasRemovedAds: boolean;
   mergeItems: (fromPos: [number, number], toPos: [number, number]) => boolean;
   spawnItem: (item: GridItem) => boolean;
   clearStoryTrigger: () => void;
   setUserId: (id: string) => void;
+  setHasRemovedAds: (val: boolean) => void;
   resetGame: () => void;
 }
 
@@ -65,6 +68,7 @@ export const useGameStore = create<GameState>()(
       pendingStoryTrigger: null,
       lastMergePosition: null,
       userId: null,
+      hasRemovedAds: false,
 
       mergeItems: (fromPos, toPos) => {
         const { grid, xp, discoveredRecipes } = get();
@@ -102,6 +106,8 @@ export const useGameStore = create<GameState>()(
 
       setUserId: (id) => set({ userId: id }),
 
+      setHasRemovedAds: (val) => set({ hasRemovedAds: val }),
+
       resetGame: () =>
         set({
           grid: makeInitialGrid(),
@@ -125,6 +131,8 @@ export const useGameStore = create<GameState>()(
         discoveredRecipes: state.discoveredRecipes,
         pendingStoryTrigger: state.pendingStoryTrigger,
         lastMergePosition: state.lastMergePosition,
+        hasRemovedAds: state.hasRemovedAds, // persisted — survives restarts
+        // userId intentionally excluded — managed by Supabase auth
       }),
     },
   ),
