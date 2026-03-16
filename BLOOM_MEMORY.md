@@ -806,15 +806,26 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ **Session 3:** CafeScreen.tsx, StoryToast.tsx, App.tsx → CafeScreen — zero TS errors
 - ✅ **Supabase setup:** project created, .env written, .gitignore patched, all commits pushed to GitHub
 - ✅ **Session 4:** supabase.ts, useSave.ts, gameState userId, CafeScreen auth — zero TS errors
+- ✅ **Session 5:** purchases.ts, ShopScreen.tsx, hasRemovedAds, RevenueCat wired — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
-**NEXT SESSION (Session 5):**
-- `src/services/purchases.ts` — RevenueCat setup, fetchOfferings, purchasePackage, restorePurchases
-- `src/screens/ShopScreen.tsx` — cosmetic themes, Rowan outfits, remove-ads purchase
-- Remove-ads logic: check entitlement in store, suppress ads if purchased
-- Need to create RevenueCat account + Expo config before this session
+**NEXT SESSION (Session 6):**
+- Spawner logic — smarter ingredient spawning (weighted by what's mergeable)
+- Session loop — ensure player always has something to do
+- Recipe discovery tracking UI — show discovered/total count
+- Brigadier mechanic — tap to spawn rare ingredient (saffron)
+
+**SESSION 5 LOG:**
+- `react-native-purchases` installed via `npx expo install`
+- `src/services/purchases.ts` — `initPurchases()` selects key by `Platform.OS`. `checkRemoveAds()` syncs entitlement on mount. `purchasePackage()` handles user-cancel gracefully (not logged as error). `restorePurchases()` returns boolean. All functions silent on failure.
+- `src/screens/ShopScreen.tsx` — Modal-based (no navigator needed yet). Fetches RevenueCat offerings on open. Remove-ads: live price from StoreProduct if offering loaded, falls back to "£2.99". Cosmetic themes + outfits shown as "coming soon" placeholders. Restore Purchases button. Ethical footer copy ("No pay-to-progress. Ever."). Degrades gracefully when RevenueCat not fully configured.
+- `src/game/gameState.ts` — `hasRemovedAds: boolean` added, included in `partialize` (persisted). `setHasRemovedAds` action added.
+- `App.tsx` — `initPurchases()` called in `useEffect([], [])` before any purchase calls.
+- `src/screens/CafeScreen.tsx` — 🛍️ shop button added to chalkboard header. `checkRemoveAds()` synced on mount (catches cross-device purchases). `ShopScreen` modal rendered.
+- **RevenueCat dashboard still needs:** entitlement "remove_ads", product BLOOM_REMOVE_ADS, default offering configured.
+- **Commit:** `cb5779c Session 5 — RevenueCat IAP complete`
 
 **SESSION 4 LOG:**
 - `src/services/supabase.ts` — Supabase client (AsyncStorage session persistence via `as any` cast — it satisfies SupportedStorage but types don't align perfectly), `cloudSave` (fire-and-forget upsert, never throws), `cloudLoad` (returns null on any failure). SQL for `game_saves` table + RLS policy documented in file header.
