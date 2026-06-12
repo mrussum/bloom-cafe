@@ -18,6 +18,12 @@ export function SettingsModal({ visible, onClose }: Props) {
   const musicEnabled = useGameStore((s) => s.musicEnabled);
   const setSoundEnabled = useGameStore((s) => s.setSoundEnabled);
   const setMusicEnabled = useGameStore((s) => s.setMusicEnabled);
+  const setHasOnboarded = useGameStore((s) => s.setHasOnboarded);
+
+  function replayIntro() {
+    setHasOnboarded(false);
+    onClose(); // closing reveals the onboarding overlay again
+  }
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
@@ -56,6 +62,17 @@ export function SettingsModal({ visible, onClose }: Props) {
               thumbColor="#FFF8F0"
             />
           </View>
+
+          <Pressable
+            style={({ pressed }) => [styles.actionRow, pressed && styles.actionPressed]}
+            onPress={replayIntro}
+          >
+            <View style={styles.rowText}>
+              <Text style={styles.rowTitle}>Replay intro</Text>
+              <Text style={styles.rowSub}>Watch the welcome again.</Text>
+            </View>
+            <Text style={styles.actionChevron}>›</Text>
+          </Pressable>
 
           <Text style={styles.footer}>
             The Fluffy Bunny sounds best with the volume up — but it's your café. 🐰
@@ -128,6 +145,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#7A6855',
     marginTop: 2,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FFF8F0',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#B8977E',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  actionPressed: {
+    backgroundColor: '#F5E6CC',
+  },
+  actionChevron: {
+    fontSize: 20,
+    color: '#C87C5E',
+    fontWeight: '700',
+    marginLeft: 8,
   },
   footer: {
     textAlign: 'center',

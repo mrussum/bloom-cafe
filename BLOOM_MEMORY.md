@@ -812,14 +812,24 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ **Expo Go hardening:** purchases.ts degrades gracefully when RevenueCat native module / key is absent; RUNNING.md added
 - ✅ **Session 8:** cafe.ts (Alo's repairs gate cafeLevel), repairCafe action, 5 Alo beats, CafeProgressModal.tsx, LevelUpOverlay.tsx — zero TS errors
 - ✅ **Session 9:** friendship.ts (Trixie gates ingredient categories), pantry gating, TrixieModal.tsx + friendship strip, 3 Trixie beats — zero TS errors
+- ✅ **Session 10:** OnboardingOverlay.tsx (gentle skippable first-run intro), hasOnboarded flag, "Replay intro" in settings — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
-**NEXT SESSION (Session 10):**
-- First-run onboarding — a gentle "drag two basil together" intro (no nag, skippable)
-- Real ad SDK — drop react-native-google-mobile-ads into ads.ts's showInterstitial()
+**NEXT SESSION (Session 11):**
+- Real ad SDK — drop react-native-google-mobile-ads into ads.ts's showInterstitial() (needs a dev build + AdMob app/unit IDs; deliberately deferred until those exist)
 - Replace placeholder synth audio with recorded/produced café ambience + SFX (same filenames in src/assets/sounds/)
+- First art pass — replace emoji items with produced ingredient/dish art
+
+**SESSION 10 LOG:**
+- `src/game/gameState.ts` — `hasOnboarded: boolean` (default false, persisted, with `setHasOnboarded`). Intentionally NOT cleared by `resetGame` — it's a one-time UX flag, not game progress.
+- `src/components/OnboardingOverlay.tsx` (NEW) — three warm cards over a scrim: (1) welcome / who Rowan + Linda are, (2) the merge mechanic with a `🌿 ➕ 🌿 → 🫙` demo, (3) the pantry + Trixie. Reanimated entrance (scrim fade + card spring) and a cross-fade on each step change; step dots; a primary Next / "Let's open up 🐰" button and a Skip that jumps straight to the end. Plays the sparkle SFX on finish. `zIndex: 100` so it sits above the level-up overlay; always skippable (ethical — no forced tutorial).
+- `src/screens/CafeScreen.tsx` — renders `<OnboardingOverlay>` while `!hasOnboarded`; `onDone` sets the flag so it never reappears.
+- `src/components/SettingsModal.tsx` — added a "Replay intro" action row (sets `hasOnboarded` false + closes) so players (and testers) can see the welcome again.
+- **Ad SDK deferred (deliberate):** `react-native-google-mobile-ads` is a native module needing a dev build + an `app.json` config plugin + a real AdMob account/app+unit IDs (none of which exist yet) and can't run in Expo Go or be tested here. `ads.ts` already exposes the exact drop-in seam. Wiring it blind would risk the build for no testable gain — so it stays in Session 11.
+- **Result:** `npx tsc --noEmit` → exit 0, zero errors.
+- **Commit:** `Session 10 — gentle first-run onboarding`
 
 **SESSION 9 LOG:**
 - `src/game/friendship.ts` (NEW, pure TS) — Trixie's friendship gates which ingredient *categories* the pantry offers. `FRIENDSHIP_TIERS`: Lv1 herbs+dry (start), Lv2 dairy (3 pts), Lv3 vegetable (7), Lv4 fruit (12). Points grow by 1 per *new recipe discovered* (a dish cooked with Trixie). Helpers: `friendshipLevelFor`, `nextFriendshipTier`, `friendshipTierTrigger`, `unlockedCategories`, `unlockedIngredientIds`.

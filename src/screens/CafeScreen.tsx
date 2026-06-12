@@ -35,6 +35,7 @@ import { SettingsModal } from '../components/SettingsModal';
 import { CafeProgressModal } from '../components/CafeProgressModal';
 import { TrixieModal } from '../components/TrixieModal';
 import { LevelUpOverlay } from '../components/LevelUpOverlay';
+import { OnboardingOverlay } from '../components/OnboardingOverlay';
 import { supabase } from '../services/supabase';
 import { useSave } from '../hooks/useSave';
 import { useAudio } from '../hooks/useAudio';
@@ -62,6 +63,8 @@ export function CafeScreen() {
   const setUserId = useGameStore((s) => s.setUserId);
   const hasRemovedAds = useGameStore((s) => s.hasRemovedAds);
   const setHasRemovedAds = useGameStore((s) => s.setHasRemovedAds);
+  const hasOnboarded = useGameStore((s) => s.hasOnboarded);
+  const setHasOnboarded = useGameStore((s) => s.setHasOnboarded);
 
   const [shopOpen, setShopOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
@@ -299,6 +302,9 @@ export function CafeScreen() {
 
       {/* Level-up celebration — above everything */}
       <LevelUpOverlay level={celebrationLevel} onDone={() => setCelebrationLevel(null)} />
+
+      {/* First-run onboarding — sits on top until completed/skipped */}
+      {!hasOnboarded ? <OnboardingOverlay onDone={() => setHasOnboarded(true)} /> : null}
 
       {/* Modals */}
       <ShopScreen visible={shopOpen} onClose={() => setShopOpen(false)} />

@@ -80,6 +80,8 @@ interface GameState {
   // audio prefs — persisted
   soundEnabled: boolean;
   musicEnabled: boolean;
+  // first-run onboarding seen — persisted
+  hasOnboarded: boolean;
   mergeItems: (fromPos: [number, number], toPos: [number, number]) => boolean;
   spawnItem: (item: GridItem) => boolean;
   spawnBase: (ingredientId: string) => boolean;
@@ -92,6 +94,7 @@ interface GameState {
   setHasRemovedAds: (val: boolean) => void;
   setSoundEnabled: (val: boolean) => void;
   setMusicEnabled: (val: boolean) => void;
+  setHasOnboarded: (val: boolean) => void;
   resetGame: () => void;
 }
 
@@ -112,6 +115,7 @@ export const useGameStore = create<GameState>()(
       hasRemovedAds: false,
       soundEnabled: true,
       musicEnabled: true,
+      hasOnboarded: false,
 
       mergeItems: (fromPos, toPos) => {
         const { grid, xp, discoveredRecipes, mergeCount, friendshipPoints } = get();
@@ -232,6 +236,8 @@ export const useGameStore = create<GameState>()(
 
       setMusicEnabled: (val) => set({ musicEnabled: val }),
 
+      setHasOnboarded: (val) => set({ hasOnboarded: val }),
+
       resetGame: () =>
         set({
           grid: makeInitialGrid(),
@@ -264,6 +270,7 @@ export const useGameStore = create<GameState>()(
         hasRemovedAds: state.hasRemovedAds, // persisted — survives restarts
         soundEnabled: state.soundEnabled,
         musicEnabled: state.musicEnabled,
+        hasOnboarded: state.hasOnboarded,
         // userId intentionally excluded — managed by Supabase auth
       }),
     },
