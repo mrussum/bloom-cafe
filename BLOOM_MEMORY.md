@@ -807,15 +807,33 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ **Supabase setup:** project created, .env written, .gitignore patched, all commits pushed to GitHub
 - ✅ **Session 4:** supabase.ts, useSave.ts, gameState userId, CafeScreen auth — zero TS errors
 - ✅ **Session 5:** purchases.ts, ShopScreen.tsx, hasRemovedAds, RevenueCat wired — zero TS errors
+- ✅ **Session 6:** spawner.ts, full pantry, ensurePlayable session loop, RecipeBook.tsx, Brigadier tap-to-summon — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
-**NEXT SESSION (Session 6):**
-- Spawner logic — smarter ingredient spawning (weighted by what's mergeable)
-- Session loop — ensure player always has something to do
-- Recipe discovery tracking UI — show discovered/total count
-- Brigadier mechanic — tap to spawn rare ingredient (saffron)
+**NEXT SESSION (Session 7):**
+- Audio pass — expo-av ambient café loop + merge/spawn SFX (the "feel" layer)
+- Level-up moment — celebratory beat + the ethical ad trigger (ads ONLY on level-up / shop-open)
+- Café level upgrades — gate behind Alo's repairs (cafeLevel is in the store, unused so far)
+- Sound toggle in a small settings surface
+
+**SESSION 6 LOG:**
+- `src/game/recipes.ts` — added `BaseIngredient` interface (typed `BASE_INGREDIENTS`, with `brigadierOnly?`) so the spawner can filter Brigadier-only items under strict mode.
+- `src/game/spawner.ts` (NEW, pure TS — zero React) — the content-pass brain:
+  - `SPAWNABLE_INGREDIENTS` = all base ingredients except saffron (Brigadier-only).
+  - `createBaseItem(id)` — single source of truth for building a base GridItem (de-duplicates the old inline builders in gameState + CafeScreen).
+  - `chooseSmartSpawn(grid, rng?)` — weighted random; +4 weight per ingredient that would immediately complete a merge given what's already on the grid ("weighted by what's mergeable"). RNG injectable for future tests.
+  - `chooseRescueItem(grid)` — returns a base ingredient guaranteed to make a merge possible (partner of something present, else a self-pairing seed). Terminates in ≤2 spawns even on an adversarial full-orphan grid.
+  - `findClearableCell(grid)` — lowest-tier cell, used only to break a true full-grid deadlock.
+  - `recipeProgress(discovered)` → `{ found, total }`; `getNextGoal(discovered)` → next actionable (or lowest-tier) undiscovered recipe; `lookupType(type)` → `{ emoji, name }` for any item type.
+- `src/game/gameState.ts` — `mergeCount` + `lastBrigadierMerge` added (persisted). New actions: `spawnBase(id)`, `autoSpawn()` (smart weighted), `summonBrigadier()` (drops saffron + sets `brigadier_visit` beat + resets cooldown), `ensurePlayable()` (session-loop net — no-ops when a merge exists, else tops up with a rescue item, freeing a low-tier cell if the grid is full). `mergeItems` now increments `mergeCount`. `spawnItem` now records `lastMergePosition`. Exported `BRIGADIER_COOLDOWN = 3` (progress-gated, NOT a real-time timer — keeps the ethical "no timers" rule).
+- `src/game/npcs.ts` — added `brigadier_visit` beat (action-only, two lines, hat slightly askew — he never speaks).
+- `src/components/RecipeBook.tsx` (NEW) — Modal discovery tracker. Recipes grouped by tier with coloured dots; discovered cards show emoji + name + input emojis, undiscovered stay 🔒 "???". Header shows `found/total`. Matches ShopScreen's modal style.
+- `src/screens/CafeScreen.tsx` — replaced the 3 fixed spawn buttons with a horizontal **pantry** of ALL 9 base ingredients (this is what finally makes every recipe craftable/discoverable). Added: 📖 Recipe Book header button, a tappable **goal hint banner** (`getNextGoal`) with the `found/total` count, a **🧺 Box of bits** smart-spawn button, the **Brigadier** (🐒, gentle Reanimated pulse) that appears over the grid once `mergeCount - lastBrigadierMerge >= BRIGADIER_COOLDOWN` and drops saffron on tap, and a `useEffect([grid])` that calls `ensurePlayable()` so the player can never hit a dead end.
+- **Design note:** the pantry (full player choice) is the primary input; `chooseSmartSpawn` powers the optional Box of bits; `ensurePlayable` only intervenes when the grid genuinely can't move — preserving player agency while guaranteeing the session loop. Architecture rules held: `src/game/` stayed pure TS, all mutation via store actions, no real-time timers.
+- **Result:** `npx tsc --noEmit` → exit 0, zero errors. (Note: `node_modules` was absent in a fresh container — ran `npm install` first.)
+- **Commit:** `Session 6 — content pass: spawner, session loop, recipe book, Brigadier`
 
 **SESSION 5 LOG:**
 - `react-native-purchases` installed via `npx expo install`

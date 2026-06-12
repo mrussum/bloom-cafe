@@ -1,16 +1,30 @@
 // src/screens/CafeScreen.tsx
 // Bloom — The Fluffy Bunny Café
-// Main game screen: chalkboard header, merge grid, spawn buttons
+// Main game screen: chalkboard header, merge grid, pantry, Brigadier + goals.
 
 import React, { useEffect, useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { v4 as uuidv4 } from 'uuid';
-import { useGameStore } from '../game/gameState';
-import { BASE_INGREDIENTS } from '../game/recipes';
-import type { GridItem, ItemCategory, ItemTier } from '../game/types';
+import * as Haptics from 'expo-haptics';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import { useGameStore, BRIGADIER_COOLDOWN } from '../game/gameState';
+import { SPAWNABLE_INGREDIENTS, getNextGoal, lookupType, recipeProgress } from '../game/spawner';
 import { MergeGrid } from '../components/MergeGrid';
 import { StoryToast } from '../components/StoryToast';
+import { RecipeBook } from '../components/RecipeBook';
 import { supabase } from '../services/supabase';
 import { useSave } from '../hooks/useSave';
 import { checkRemoveAds } from '../services/purchases';
@@ -18,21 +32,23 @@ import { ShopScreen } from './ShopScreen';
 
 const XP_PER_LEVEL = 100;
 
-// The three spawn buttons specified for Session 3
-const SPAWN_BUTTONS = [
-  BASE_INGREDIENTS[0], // basil 🌿
-  BASE_INGREDIENTS[1], // tomato 🍅
-  BASE_INGREDIENTS[2], // flour 🌾
-];
-
 export function CafeScreen() {
   const xp = useGameStore((s) => s.xp);
   const level = useGameStore((s) => s.level);
-  const spawnItem = useGameStore((s) => s.spawnItem);
+  const grid = useGameStore((s) => s.grid);
+  const discoveredRecipes = useGameStore((s) => s.discoveredRecipes);
+  const mergeCount = useGameStore((s) => s.mergeCount);
+  const lastBrigadierMerge = useGameStore((s) => s.lastBrigadierMerge);
+  const spawnBase = useGameStore((s) => s.spawnBase);
+  const autoSpawn = useGameStore((s) => s.autoSpawn);
+  const summonBrigadier = useGameStore((s) => s.summonBrigadier);
+  const ensurePlayable = useGameStore((s) => s.ensurePlayable);
   const userId = useGameStore((s) => s.userId);
   const setUserId = useGameStore((s) => s.setUserId);
   const setHasRemovedAds = useGameStore((s) => s.setHasRemovedAds);
+
   const [shopOpen, setShopOpen] = useState(false);
+  const [bookOpen, setBookOpen] = useState(false);
 
   // Anonymous auth — resolves existing session or creates a new one.
   // Fire-and-forget: game is fully playable while this resolves.
@@ -57,25 +73,50 @@ export function CafeScreen() {
     checkRemoveAds().then((val) => { if (val) setHasRemovedAds(val); });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Session loop: whenever the grid can't merge, top it up so the player
+  // always has a move. No-ops when a merge is already available.
+  useEffect(() => {
+    ensurePlayable();
+  }, [grid, ensurePlayable]);
+
   // Auto-save every 60s + on background
   useSave(userId);
 
   const xpProgress = (xp % XP_PER_LEVEL) / XP_PER_LEVEL;
+  const { found, total } = recipeProgress(discoveredRecipes);
+  const nextGoal = getNextGoal(discoveredRecipes);
+  const brigadierHere = mergeCount - lastBrigadierMerge >= BRIGADIER_COOLDOWN;
+
+  // Gentle pulse for the Brigadier so he draws the eye without nagging.
+  const pulse = useSharedValue(1);
+  useEffect(() => {
+    if (brigadierHere) {
+      pulse.value = withRepeat(
+        withSequence(withTiming(1.12, { duration: 700 }), withTiming(1, { duration: 700 })),
+        -1,
+        true,
+      );
+    } else {
+      pulse.value = withTiming(1, { duration: 200 });
+    }
+  }, [brigadierHere, pulse]);
+  const brigadierStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
 
   function handleSpawn(id: string) {
-    const ing = BASE_INGREDIENTS.find((i) => i.id === id);
-    if (!ing) return;
-    const item: GridItem = {
-      id: uuidv4(),
-      type: ing.id,
-      tier: ing.tier as ItemTier,
-      category: ing.category as ItemCategory,
-      emoji: ing.emoji,
-      assetKey: ing.id,
-      isNew: true,
-      isLocked: false,
-    };
-    spawnItem(item);
+    spawnBase(id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  }
+
+  function handleBox() {
+    const ok = autoSpawn();
+    Haptics.impactAsync(
+      ok ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
+    ).catch(() => {});
+  }
+
+  function handleBrigadier() {
+    const ok = summonBrigadier();
+    if (ok) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
   }
 
   return (
@@ -90,8 +131,11 @@ export function CafeScreen() {
               <View style={styles.levelBadge}>
                 <Text style={styles.levelText}>Lv {level}</Text>
               </View>
-              <Pressable onPress={() => setShopOpen(true)} style={styles.shopButton}>
-                <Text style={styles.shopButtonText}>🛍️</Text>
+              <Pressable onPress={() => setBookOpen(true)} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>📖</Text>
+              </Pressable>
+              <Pressable onPress={() => setShopOpen(true)} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>🛍️</Text>
               </Pressable>
             </View>
           </View>
@@ -108,25 +152,60 @@ export function CafeScreen() {
           </View>
         </View>
 
-        {/* ── Merge grid ── */}
+        {/* ── Goal hint ── */}
+        <Pressable onPress={() => setBookOpen(true)} style={styles.goalBanner}>
+          {nextGoal ? (
+            <Text style={styles.goalText} numberOfLines={1}>
+              Next: make <Text style={styles.goalName}>{nextGoal.displayName}</Text> {nextGoal.emoji}
+            </Text>
+          ) : (
+            <Text style={styles.goalText}>Every recipe discovered — Linda's proud. 🐰</Text>
+          )}
+          <Text style={styles.goalCount}>{found}/{total}</Text>
+        </Pressable>
+
+        {/* ── Merge grid (Brigadier perches here when he visits) ── */}
         <View style={styles.gridWrapper}>
           <View style={styles.gridShadow}>
             <MergeGrid />
           </View>
+
+          {brigadierHere ? (
+            <Animated.View style={[styles.brigadierWrap, brigadierStyle]}>
+              <Pressable onPress={handleBrigadier} style={styles.brigadier}>
+                <Text style={styles.brigadierEmoji}>🐒</Text>
+              </Pressable>
+              <Text style={styles.brigadierHint}>tap</Text>
+            </Animated.View>
+          ) : null}
         </View>
 
-        {/* ── Spawn buttons ── */}
-        <View style={styles.spawnRow}>
-          {SPAWN_BUTTONS.map((ing) => (
-            <Pressable
-              key={ing.id}
-              style={({ pressed }) => [styles.spawnButton, pressed && styles.spawnPressed]}
-              onPress={() => handleSpawn(ing.id)}
-            >
-              <Text style={styles.spawnEmoji}>{ing.emoji}</Text>
-              <Text style={styles.spawnName}>{ing.displayName}</Text>
-            </Pressable>
-          ))}
+        {/* ── Pantry ── */}
+        <View style={styles.pantry}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.pantryRow}
+          >
+            {SPAWNABLE_INGREDIENTS.map((ing) => (
+              <Pressable
+                key={ing.id}
+                style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
+                onPress={() => handleSpawn(ing.id)}
+              >
+                <Text style={styles.chipEmoji}>{ing.emoji}</Text>
+                <Text style={styles.chipName}>{ing.displayName}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Pressable
+            style={({ pressed }) => [styles.boxButton, pressed && styles.boxPressed]}
+            onPress={handleBox}
+          >
+            <Text style={styles.boxEmoji}>🧺</Text>
+            <Text style={styles.boxLabel}>Box of bits</Text>
+          </Pressable>
         </View>
 
       </SafeAreaView>
@@ -134,8 +213,9 @@ export function CafeScreen() {
       {/* Story toast — absolutely positioned, always mounted for smooth animation */}
       <StoryToast />
 
-      {/* Shop modal */}
+      {/* Modals */}
       <ShopScreen visible={shopOpen} onClose={() => setShopOpen(false)} />
+      <RecipeBook visible={bookOpen} onClose={() => setBookOpen(false)} />
     </LinearGradient>
   );
 }
@@ -190,7 +270,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#2D3B2D',
   },
-  shopButton: {
+  iconButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -198,7 +278,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shopButtonText: {
+  iconButtonText: {
     fontSize: 16,
   },
   xpTrack: {
@@ -221,6 +301,39 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
 
+  // Goal hint
+  goalBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: '#FFF8F0',
+    borderRadius: 14,
+    shadowColor: '#B8977E',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  goalText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#7A6855',
+  },
+  goalName: {
+    fontWeight: '700',
+    color: '#3D2B1F',
+  },
+  goalCount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#C87C5E',
+    marginLeft: 10,
+  },
+
   // Grid area
   gridWrapper: {
     flex: 1,
@@ -236,37 +349,101 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  // Spawn buttons
-  spawnRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 12,
-    paddingBottom: 28,
-    paddingTop: 8,
-    paddingHorizontal: 20,
-  },
-  spawnButton: {
-    flex: 1,
-    backgroundColor: '#FFF8F0',
-    borderRadius: 16,
+  // Brigadier
+  brigadierWrap: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
     alignItems: 'center',
-    paddingVertical: 12,
+  },
+  brigadier: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#FFF8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#D4B483',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  brigadierEmoji: {
+    fontSize: 28,
+  },
+  brigadierHint: {
+    fontSize: 10,
+    color: '#B8977E',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginTop: 2,
+  },
+
+  // Pantry
+  pantry: {
+    paddingBottom: 24,
+    paddingTop: 4,
+    gap: 10,
+  },
+  pantryRow: {
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  chip: {
+    backgroundColor: '#FFF8F0',
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    minWidth: 64,
     shadowColor: '#B8977E',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 3,
   },
-  spawnPressed: {
+  chipPressed: {
     backgroundColor: '#F5E6CC',
   },
-  spawnEmoji: {
-    fontSize: 26,
-    marginBottom: 4,
+  chipEmoji: {
+    fontSize: 24,
+    marginBottom: 2,
   },
-  spawnName: {
-    fontSize: 11,
+  chipName: {
+    fontSize: 10,
     color: '#7A6855',
     fontWeight: '600',
+  },
+  boxButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#2D3B2D',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  boxPressed: {
+    backgroundColor: '#3D5C3D',
+  },
+  boxEmoji: {
+    fontSize: 20,
+  },
+  boxLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#F5F0E8',
+    letterSpacing: 0.3,
   },
 });

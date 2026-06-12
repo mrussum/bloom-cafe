@@ -209,6 +209,14 @@ export const DIALOGUE_BEATS: DialogueBeat[] = [
   // — always isAction, never speech
   // ═══════════════════
   {
+    id: 'brigadier_visit',
+    character: 'brigadier',
+    lines: [
+      { speaker: 'brigadier', text: "Brigadier is on the windowsill, hat slightly askew. He sets down a single thread of saffron with enormous ceremony.", isAction: true },
+      { speaker: 'brigadier', text: "He looks at the saffron. He looks at you. He adjusts the hat, and ambles back over the garden wall.", isAction: true },
+    ]
+  },
+  {
     id: 'brigadier_saffron_watch',
     character: 'brigadier',
     lines: [

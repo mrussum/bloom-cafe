@@ -7,12 +7,22 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { v4 as uuidv4 } from 'uuid';
 import { BASE_INGREDIENTS } from './recipes';
-import { attemptMerge, findEmptyCell } from './mergeEngine';
+import { attemptMerge, findEmptyCell, hasAvailableMerges } from './mergeEngine';
+import {
+  chooseRescueItem,
+  chooseSmartSpawn,
+  createBaseItem,
+  findClearableCell,
+} from './spawner';
 import type { Grid, GridItem, ItemCategory, ItemTier } from './types';
 
 const ROWS = 5;
 const COLS = 4;
 const XP_PER_LEVEL = 100;
+
+// Brigadier reappears after this many merges since his last visit —
+// progress-gated, never clock-gated (no manipulative real-time timers).
+export const BRIGADIER_COOLDOWN = 3;
 
 function makeEmptyGrid(): Grid {
   return Array.from({ length: ROWS }, () => Array<GridItem | null>(COLS).fill(null));
@@ -45,12 +55,19 @@ interface GameState {
   discoveredRecipes: string[];
   pendingStoryTrigger: string | null;
   lastMergePosition: [number, number] | null;
+  // mergeCount paces the Brigadier (and seeds future stats)
+  mergeCount: number;
+  lastBrigadierMerge: number;
   // userId is session-only — managed by Supabase auth, not persisted here
   userId: string | null;
   // hasRemovedAds is persisted — survives app restarts
   hasRemovedAds: boolean;
   mergeItems: (fromPos: [number, number], toPos: [number, number]) => boolean;
   spawnItem: (item: GridItem) => boolean;
+  spawnBase: (ingredientId: string) => boolean;
+  autoSpawn: () => boolean;
+  summonBrigadier: () => boolean;
+  ensurePlayable: () => boolean;
   clearStoryTrigger: () => void;
   setUserId: (id: string) => void;
   setHasRemovedAds: (val: boolean) => void;
@@ -67,11 +84,13 @@ export const useGameStore = create<GameState>()(
       discoveredRecipes: [],
       pendingStoryTrigger: null,
       lastMergePosition: null,
+      mergeCount: 0,
+      lastBrigadierMerge: 0,
       userId: null,
       hasRemovedAds: false,
 
       mergeItems: (fromPos, toPos) => {
-        const { grid, xp, discoveredRecipes } = get();
+        const { grid, xp, discoveredRecipes, mergeCount } = get();
         const result = attemptMerge(grid, fromPos, toPos);
         if (!result) return false;
 
@@ -87,6 +106,7 @@ export const useGameStore = create<GameState>()(
           discoveredRecipes: newDiscovered,
           pendingStoryTrigger: result.storyTrigger ?? null,
           lastMergePosition: result.newItemPosition,
+          mergeCount: mergeCount + 1,
         });
         return true;
       },
@@ -98,7 +118,58 @@ export const useGameStore = create<GameState>()(
         const [r, c] = pos;
         const newGrid: Grid = grid.map((row) => [...row]);
         newGrid[r][c] = { ...item, id: uuidv4(), isNew: true };
-        set({ grid: newGrid });
+        set({ grid: newGrid, lastMergePosition: pos });
+        return true;
+      },
+
+      // Pantry tap — spawn a specific base ingredient.
+      spawnBase: (ingredientId) => {
+        const item = createBaseItem(ingredientId);
+        if (!item) return false;
+        return get().spawnItem(item);
+      },
+
+      // "Box of bits" — spawn a smart, mergeable-weighted base ingredient.
+      autoSpawn: () => {
+        const { grid } = get();
+        if (!findEmptyCell(grid)) return false;
+        return get().spawnItem(chooseSmartSpawn(grid));
+      },
+
+      // Brigadier visits: drops rare saffron + a wordless flavour beat.
+      summonBrigadier: () => {
+        const { grid, mergeCount } = get();
+        const saffron = createBaseItem('saffron');
+        const pos = findEmptyCell(grid);
+        if (!saffron || !pos) return false;
+        const [r, c] = pos;
+        const newGrid: Grid = grid.map((row) => [...row]);
+        newGrid[r][c] = saffron;
+        set({
+          grid: newGrid,
+          lastMergePosition: pos,
+          pendingStoryTrigger: 'brigadier_visit',
+          lastBrigadierMerge: mergeCount,
+        });
+        return true;
+      },
+
+      // Session-loop safety net: if nothing on the grid can merge, top it up
+      // with a guaranteed-helpful ingredient so the player always has a move.
+      ensurePlayable: () => {
+        const { grid } = get();
+        if (hasAvailableMerges(grid)) return false;
+
+        const rescue = chooseRescueItem(grid);
+        const newGrid: Grid = grid.map((row) => [...row]);
+        let pos = findEmptyCell(grid);
+        if (!pos) {
+          // Full grid with no merges — free one low-tier cell to break the deadlock.
+          pos = findClearableCell(grid);
+          if (!pos) return false;
+        }
+        newGrid[pos[0]][pos[1]] = { ...rescue, isNew: true };
+        set({ grid: newGrid, lastMergePosition: pos });
         return true;
       },
 
@@ -117,6 +188,8 @@ export const useGameStore = create<GameState>()(
           discoveredRecipes: [],
           pendingStoryTrigger: null,
           lastMergePosition: null,
+          mergeCount: 0,
+          lastBrigadierMerge: 0,
         }),
     }),
     {
@@ -131,6 +204,8 @@ export const useGameStore = create<GameState>()(
         discoveredRecipes: state.discoveredRecipes,
         pendingStoryTrigger: state.pendingStoryTrigger,
         lastMergePosition: state.lastMergePosition,
+        mergeCount: state.mergeCount,
+        lastBrigadierMerge: state.lastBrigadierMerge,
         hasRemovedAds: state.hasRemovedAds, // persisted — survives restarts
         // userId intentionally excluded — managed by Supabase auth
       }),

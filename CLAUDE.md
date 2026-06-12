@@ -103,10 +103,10 @@ BLOOM_ROWAN_OUTFIT_*   £0.99 each (character cosmetics)
 
 ### Current Build Status
 [ UPDATE THIS EACH SESSION ]
-- Phase: IAP / monetisation
-- Last completed: purchases.ts (RevenueCat wrapper), ShopScreen.tsx (modal shop), hasRemovedAds in store, shop wired into CafeScreen — zero TS errors
+- Phase: content pass / session loop
+- Last completed: spawner.ts (smart weighted spawning + rescue + goals), full pantry (all base ingredients spawnable so every recipe is discoverable), ensurePlayable session-loop net, RecipeBook.tsx discovery tracker, Brigadier tap-to-summon (saffron + flavour beat), goal hint banner — zero TS errors
 - In progress: —
-- Next task: Session 6 — content pass (all recipes discoverable, spawner logic, session loop)
+- Next task: Session 7 — audio pass (expo-av ambient + merge SFX) and level-up / ad-trigger moments
 
 ### Writing Style Guide
 - Warm but never saccharine

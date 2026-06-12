@@ -12,6 +12,17 @@ export interface Recipe {
   npcTrigger?: string;
 }
 
+export interface BaseIngredient {
+  id: string;
+  emoji: string;
+  displayName: string;
+  tier: number;
+  category: string;
+  // Brigadier-only ingredients can't be spawned from the pantry —
+  // they only arrive when the baboon decides to visit.
+  brigadierOnly?: boolean;
+}
+
 export const RECIPES: Recipe[] = [
 
   // ═══════════════════════════════════════
@@ -62,7 +73,7 @@ export const RECIPES: Recipe[] = [
   { inputs: ['friday_pizza', 'celebration_cake'], output: 'lindas_table', outputTier: 6, outputCategory: 'legendary', emoji: '🐰', displayName: "Linda's Table", npcTrigger: 'linda_at_the_table' },
 ];
 
-export const BASE_INGREDIENTS = [
+export const BASE_INGREDIENTS: BaseIngredient[] = [
   { id: 'basil', emoji: '🌿', displayName: 'Basil', tier: 1, category: 'herb' },
   { id: 'tomato', emoji: '🍅', displayName: 'Tomato', tier: 1, category: 'vegetable' },
   { id: 'flour', emoji: '🌾', displayName: 'Plain Flour', tier: 1, category: 'dry' },
