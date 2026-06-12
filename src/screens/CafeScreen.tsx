@@ -2,7 +2,7 @@
 // Bloom — The Fluffy Bunny Café
 // Main game screen: chalkboard header, merge grid, pantry, Brigadier + goals.
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   SafeAreaView,
@@ -21,12 +21,16 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useGameStore, BRIGADIER_COOLDOWN } from '../game/gameState';
-import { SPAWNABLE_INGREDIENTS, getNextGoal, lookupType, recipeProgress } from '../game/spawner';
+import { SPAWNABLE_INGREDIENTS, getNextGoal, recipeProgress } from '../game/spawner';
 import { MergeGrid } from '../components/MergeGrid';
 import { StoryToast } from '../components/StoryToast';
 import { RecipeBook } from '../components/RecipeBook';
+import { SettingsModal } from '../components/SettingsModal';
 import { supabase } from '../services/supabase';
 import { useSave } from '../hooks/useSave';
+import { useAudio } from '../hooks/useAudio';
+import { playSfx } from '../services/audio';
+import { showInterstitial } from '../services/ads';
 import { checkRemoveAds } from '../services/purchases';
 import { ShopScreen } from './ShopScreen';
 
@@ -45,10 +49,12 @@ export function CafeScreen() {
   const ensurePlayable = useGameStore((s) => s.ensurePlayable);
   const userId = useGameStore((s) => s.userId);
   const setUserId = useGameStore((s) => s.setUserId);
+  const hasRemovedAds = useGameStore((s) => s.hasRemovedAds);
   const setHasRemovedAds = useGameStore((s) => s.setHasRemovedAds);
 
   const [shopOpen, setShopOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Anonymous auth — resolves existing session or creates a new one.
   // Fire-and-forget: game is fully playable while this resolves.
@@ -82,6 +88,29 @@ export function CafeScreen() {
   // Auto-save every 60s + on background
   useSave(userId);
 
+  // Audio: preload SFX, drive ambient loop from prefs
+  useAudio();
+
+  // Level-up moment: celebratory chime + the (only) in-play ad trigger.
+  // Skips the very first render so loading a saved level never fires an ad.
+  const prevLevel = useRef<number | null>(null);
+  useEffect(() => {
+    if (prevLevel.current === null) {
+      prevLevel.current = level;
+      return;
+    }
+    if (level > prevLevel.current) {
+      void playSfx('levelup');
+      void showInterstitial({ surface: 'levelup', hasRemovedAds });
+    }
+    prevLevel.current = level;
+  }, [level, hasRemovedAds]);
+
+  function openShop() {
+    setShopOpen(true);
+    void showInterstitial({ surface: 'shop_open', hasRemovedAds });
+  }
+
   const xpProgress = (xp % XP_PER_LEVEL) / XP_PER_LEVEL;
   const { found, total } = recipeProgress(discoveredRecipes);
   const nextGoal = getNextGoal(discoveredRecipes);
@@ -103,12 +132,13 @@ export function CafeScreen() {
   const brigadierStyle = useAnimatedStyle(() => ({ transform: [{ scale: pulse.value }] }));
 
   function handleSpawn(id: string) {
-    spawnBase(id);
+    if (spawnBase(id)) void playSfx('spawn');
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
   }
 
   function handleBox() {
     const ok = autoSpawn();
+    if (ok) void playSfx('spawn');
     Haptics.impactAsync(
       ok ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light,
     ).catch(() => {});
@@ -126,7 +156,7 @@ export function CafeScreen() {
         {/* ── Chalkboard header ── */}
         <View style={styles.chalkboard}>
           <View style={styles.headerRow}>
-            <Text style={styles.cafeTitle}>The Fluffy Bunny 🐰</Text>
+            <Text style={styles.cafeTitle} numberOfLines={1}>The Fluffy Bunny 🐰</Text>
             <View style={styles.headerRight}>
               <View style={styles.levelBadge}>
                 <Text style={styles.levelText}>Lv {level}</Text>
@@ -134,7 +164,10 @@ export function CafeScreen() {
               <Pressable onPress={() => setBookOpen(true)} style={styles.iconButton}>
                 <Text style={styles.iconButtonText}>📖</Text>
               </Pressable>
-              <Pressable onPress={() => setShopOpen(true)} style={styles.iconButton}>
+              <Pressable onPress={() => setSettingsOpen(true)} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>⚙️</Text>
+              </Pressable>
+              <Pressable onPress={openShop} style={styles.iconButton}>
                 <Text style={styles.iconButtonText}>🛍️</Text>
               </Pressable>
             </View>
@@ -216,6 +249,7 @@ export function CafeScreen() {
       {/* Modals */}
       <ShopScreen visible={shopOpen} onClose={() => setShopOpen(false)} />
       <RecipeBook visible={bookOpen} onClose={() => setBookOpen(false)} />
+      <SettingsModal visible={settingsOpen} onClose={() => setSettingsOpen(false)} />
     </LinearGradient>
   );
 }
@@ -253,11 +287,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#F5F0E8',
     letterSpacing: 0.3,
+    flexShrink: 1,
+    marginRight: 8,
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 6,
   },
   levelBadge: {
     backgroundColor: '#D4E870',

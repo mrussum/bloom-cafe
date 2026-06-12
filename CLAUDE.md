@@ -103,10 +103,10 @@ BLOOM_ROWAN_OUTFIT_*   £0.99 each (character cosmetics)
 
 ### Current Build Status
 [ UPDATE THIS EACH SESSION ]
-- Phase: content pass / session loop
-- Last completed: spawner.ts (smart weighted spawning + rescue + goals), full pantry (all base ingredients spawnable so every recipe is discoverable), ensurePlayable session-loop net, RecipeBook.tsx discovery tracker, Brigadier tap-to-summon (saffron + flavour beat), goal hint banner — zero TS errors
+- Phase: audio + feel / level-up moments
+- Last completed: audio.ts (expo-av — preloaded SFX + looping ambient pad), synthesised WAV assets (scripts/gen_audio.py → merge/spawn/levelup/sparkle/ambient), useAudio.ts hook, sound+music prefs in store, SettingsModal.tsx (⚙️ toggles), ads.ts ethical ad-trigger stub (level-up + shop-open only, respects remove-ads), merge/spawn/level-up/story SFX wired — zero TS errors
 - In progress: —
-- Next task: Session 7 — audio pass (expo-av ambient + merge SFX) and level-up / ad-trigger moments
+- Next task: Session 8 — café progression (Alo's repairs gate cafeLevel upgrades) + a proper level-up celebration moment, then wire a real ad SDK into ads.ts
 
 ### Writing Style Guide
 - Warm but never saccharine

@@ -62,6 +62,9 @@ interface GameState {
   userId: string | null;
   // hasRemovedAds is persisted — survives app restarts
   hasRemovedAds: boolean;
+  // audio prefs — persisted
+  soundEnabled: boolean;
+  musicEnabled: boolean;
   mergeItems: (fromPos: [number, number], toPos: [number, number]) => boolean;
   spawnItem: (item: GridItem) => boolean;
   spawnBase: (ingredientId: string) => boolean;
@@ -71,6 +74,8 @@ interface GameState {
   clearStoryTrigger: () => void;
   setUserId: (id: string) => void;
   setHasRemovedAds: (val: boolean) => void;
+  setSoundEnabled: (val: boolean) => void;
+  setMusicEnabled: (val: boolean) => void;
   resetGame: () => void;
 }
 
@@ -88,6 +93,8 @@ export const useGameStore = create<GameState>()(
       lastBrigadierMerge: 0,
       userId: null,
       hasRemovedAds: false,
+      soundEnabled: true,
+      musicEnabled: true,
 
       mergeItems: (fromPos, toPos) => {
         const { grid, xp, discoveredRecipes, mergeCount } = get();
@@ -179,6 +186,10 @@ export const useGameStore = create<GameState>()(
 
       setHasRemovedAds: (val) => set({ hasRemovedAds: val }),
 
+      setSoundEnabled: (val) => set({ soundEnabled: val }),
+
+      setMusicEnabled: (val) => set({ musicEnabled: val }),
+
       resetGame: () =>
         set({
           grid: makeInitialGrid(),
@@ -207,6 +218,8 @@ export const useGameStore = create<GameState>()(
         mergeCount: state.mergeCount,
         lastBrigadierMerge: state.lastBrigadierMerge,
         hasRemovedAds: state.hasRemovedAds, // persisted — survives restarts
+        soundEnabled: state.soundEnabled,
+        musicEnabled: state.musicEnabled,
         // userId intentionally excluded — managed by Supabase auth
       }),
     },

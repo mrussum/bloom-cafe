@@ -808,15 +808,29 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ **Session 4:** supabase.ts, useSave.ts, gameState userId, CafeScreen auth — zero TS errors
 - ✅ **Session 5:** purchases.ts, ShopScreen.tsx, hasRemovedAds, RevenueCat wired — zero TS errors
 - ✅ **Session 6:** spawner.ts, full pantry, ensurePlayable session loop, RecipeBook.tsx, Brigadier tap-to-summon — zero TS errors
+- ✅ **Session 7:** audio.ts + synthesised WAV assets, useAudio.ts, sound/music prefs, SettingsModal.tsx, ads.ts ethical trigger, SFX wired — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
-**NEXT SESSION (Session 7):**
-- Audio pass — expo-av ambient café loop + merge/spawn SFX (the "feel" layer)
-- Level-up moment — celebratory beat + the ethical ad trigger (ads ONLY on level-up / shop-open)
-- Café level upgrades — gate behind Alo's repairs (cafeLevel is in the store, unused so far)
-- Sound toggle in a small settings surface
+**NEXT SESSION (Session 8):**
+- Café progression — gate cafeLevel upgrades behind Alo's repairs (cafeLevel sits in the store, still unused)
+- Level-up celebration — a proper full-screen moment (currently just a chime + ad trigger)
+- Real ad SDK — drop react-native-google-mobile-ads into ads.ts's showInterstitial() (call sites + guarantees already in place)
+- Replace placeholder synth audio with recorded/produced café ambience + SFX (same filenames in src/assets/sounds/)
+
+**SESSION 7 LOG:**
+- **Audio assets** — no sound files existed and Metro can't bundle `require()`s to missing files, so synthesised tasteful SFX + a soft ambient pad from scratch. `scripts/gen_audio.py` (Python stdlib only, committed for reproducibility) writes `src/assets/sounds/{merge,spawn,levelup,sparkle,ambient}.wav` (mono 44.1kHz 16-bit). merge.wav = warm C5+E5 bell (the critical merge feel); ambient.wav = 8s seamless warm pad (partials snapped to 1/duration multiples so it loops click-free). All royalty-free, replaceable by same-named recordings later.
+- `src/services/audio.ts` (NEW) — pure playback wrapper over expo-av. `initAudio()` sets the audio session (`playsInSilentModeIOS`, `shouldDuckAndroid`) and preloads SFX. `playSfx(name)` replays a preloaded one-shot. `startAmbient()/stopAmbient()` manage the looping pad. `setSfxEnabled/setMusicEnabled` honour prefs. Every call degrades silently on failure (never blocks play). Knows nothing about game state.
+- `src/hooks/useAudio.ts` (NEW) — bridges store prefs → service, starts ambient after init, and pauses/resumes ambient on AppState background/active. Mounted in CafeScreen.
+- `src/services/ads.ts` (NEW) — ethical ad trigger. `showInterstitial({surface, hasRemovedAds})` only fires on `'levelup'` / `'shop_open'`, always respects the remove-ads entitlement, and warns on any disallowed surface. No ad SDK yet — graceful placeholder with the real call sites + guarantees already wired (react-native-google-mobile-ads slots into the TODO).
+- `src/game/gameState.ts` — `soundEnabled` + `musicEnabled` (default true, persisted) with `setSoundEnabled/setMusicEnabled`. `resetGame` intentionally leaves prefs + entitlements alone.
+- `src/components/SettingsModal.tsx` (NEW) — ⚙️ modal with Sound + Music `Switch`es. Ethical copy, both on by default.
+- `src/components/MergeGrid.tsx` — `playSfx('merge')` on a successful merge (sits alongside the existing medium haptic).
+- `src/components/StoryToast.tsx` — `playSfx('sparkle')` when a story beat slides in (covers Brigadier's saffron visit too).
+- `src/screens/CafeScreen.tsx` — `useAudio()` wired; spawn/box buttons play `'spawn'`; a `prevLevel` ref detects level-ups → `playSfx('levelup')` + `showInterstitial({surface:'levelup'})` (skips first render so loading a saved level never fires an ad); ⚙️ settings button added; shop opens via `openShop()` which also triggers the shop-open ad. Title set to `numberOfLines={1}` + `flexShrink` so four header icons never overflow.
+- **Note:** `wav` is in Metro's default `assetExts`, so the requires bundle without config changes. `npx tsc --noEmit` → exit 0, zero errors.
+- **Commit:** `Session 7 — audio pass: SFX + ambient, settings, ethical ad triggers`
 
 **SESSION 6 LOG:**
 - `src/game/recipes.ts` — added `BaseIngredient` interface (typed `BASE_INGREDIENTS`, with `brigadierOnly?`) so the spawner can filter Brigadier-only items under strict mode.

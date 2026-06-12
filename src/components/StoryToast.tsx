@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useGameStore } from '../game/gameState';
 import { DIALOGUE_BEATS } from '../game/npcs';
+import { playSfx } from '../services/audio';
 import type { DialogueBeat } from '../game/types';
 
 const CHARACTER_NAMES: Record<string, string> = {
@@ -61,6 +62,7 @@ export function StoryToast() {
     setActiveBeat(beat);
     setLineIndex(0);
     slideIn();
+    void playSfx('sparkle');
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingStoryTrigger]);
 
