@@ -103,6 +103,54 @@ export const DIALOGUE_BEATS: DialogueBeat[] = [
     ]
   },
 
+  // ── Alo's café repairs (gate cafeLevel upgrades) ──
+  {
+    id: 'cafe_repair_door',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "Door's been sticking for years. Two minutes with a plane." },
+      { speaker: 'rowan', text: "You knew the whole time?" },
+      { speaker: 'alo', text: "Someone had to." },
+    ]
+  },
+  {
+    id: 'cafe_repair_counter',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "[runs a hand along the rebuilt counter]", isAction: true },
+      { speaker: 'alo', text: "Won't wobble when Linda leans on it now." },
+      { speaker: 'rowan', text: "She'll notice." },
+      { speaker: 'alo', text: "She notices everything." },
+    ]
+  },
+  {
+    id: 'cafe_repair_coffee',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "Machine's older than you." },
+      { speaker: 'rowan', text: "Can you fix it?" },
+      { speaker: 'alo', text: "Already did. Don't tell it I said its age." },
+    ]
+  },
+  {
+    id: 'cafe_repair_wall',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "Rebuilt the garden wall. Found three feathers in the gap." },
+      { speaker: 'rowan', text: "Brigadier's." },
+      { speaker: 'alo', text: "[sets the feathers on the sill, says nothing]", isAction: true },
+    ]
+  },
+  {
+    id: 'cafe_repair_window',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "Cleared the window corner. Mum's table fits there again." },
+      { speaker: 'rowan', text: "...Yeah. It does." },
+      { speaker: 'alo', text: "Thought you'd want to know." },
+    ]
+  },
+
   // ═══════════════════
   // LINDA
   // ═══════════════════

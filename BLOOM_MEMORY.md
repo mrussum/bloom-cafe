@@ -809,15 +809,27 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ **Session 5:** purchases.ts, ShopScreen.tsx, hasRemovedAds, RevenueCat wired — zero TS errors
 - ✅ **Session 6:** spawner.ts, full pantry, ensurePlayable session loop, RecipeBook.tsx, Brigadier tap-to-summon — zero TS errors
 - ✅ **Session 7:** audio.ts + synthesised WAV assets, useAudio.ts, sound/music prefs, SettingsModal.tsx, ads.ts ethical trigger, SFX wired — zero TS errors
+- ✅ **Expo Go hardening:** purchases.ts degrades gracefully when RevenueCat native module / key is absent; RUNNING.md added
+- ✅ **Session 8:** cafe.ts (Alo's repairs gate cafeLevel), repairCafe action, 5 Alo beats, CafeProgressModal.tsx, LevelUpOverlay.tsx — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
-**NEXT SESSION (Session 8):**
-- Café progression — gate cafeLevel upgrades behind Alo's repairs (cafeLevel sits in the store, still unused)
-- Level-up celebration — a proper full-screen moment (currently just a chime + ad trigger)
-- Real ad SDK — drop react-native-google-mobile-ads into ads.ts's showInterstitial() (call sites + guarantees already in place)
+**NEXT SESSION (Session 9):**
+- Trixie's friendship system — friendship levels unlock new ingredient categories (CLAUDE.md mechanic)
+- First-run onboarding — a gentle "drag two basil together" intro (no nag, skippable)
+- Real ad SDK — drop react-native-google-mobile-ads into ads.ts's showInterstitial()
 - Replace placeholder synth audio with recorded/produced café ambience + SFX (same filenames in src/assets/sounds/)
+
+**SESSION 8 LOG:**
+- `src/game/cafe.ts` (NEW, pure TS) — café progression data + helpers. `CAFE_STAGES` defines repairs taking cafeLevel 1→6 (front door → display counter → coffee machine → garden wall → window table). Each `requires` a player level and/or a discovered dish, so Alo's repairs are genuinely gated by progress. `nextCafeStage(cafeLevel)` + `cafeRepairReadiness(stage, {level, discoveredRecipes})` → `{ ready, needs[] }` with human-readable requirement strings (dish names via `lookupType`). Threads the family through the building: the garden wall is Brigadier's (saffron buns gate it), the window corner is Linda's table (celebration cake gates it).
+- `src/game/gameState.ts` — `repairCafe()` action: finds the next stage, checks readiness, advances `cafeLevel`, and sets the Alo story beat. `cafeLevel` was already persisted/reset — now it finally means something.
+- `src/game/npcs.ts` — 5 Alo repair beats (`cafe_repair_door/counter/coffee/wall/window`). Terse, dry, warm underneath; the wall beat ties back to Brigadier's feathers, the window beat to Linda's table.
+- `src/components/CafeProgressModal.tsx` (NEW) — Alo's repair list. Completed repairs show a green ✓, the next shows either an "Ask Alo to fix it" button (when ready) or a "waiting on" checklist, later repairs stay 🔒 "???". Repairing closes the modal so Alo's story toast plays.
+- `src/components/LevelUpOverlay.tsx` (NEW) — full-screen celebration replacing the bare chime: a card springs in over a scrim, 8 confetti emoji drift down (Reanimated), the level-up chime plays, a warm rotating message shows. Auto-dismisses after ~2.3s or on tap. `pointerEvents` gated so it never blocks play when hidden.
+- `src/screens/CafeScreen.tsx` — added a 🔨 header button (with an orange notification dot when a repair is ready) opening the café modal; the level-up effect now drives `LevelUpOverlay` (which owns the chime) while still firing the ethical interstitial; `celebrationLevel` state added.
+- **Note:** import order is clean (cafe → spawner → recipes; no cycle with gameState). `npx tsc --noEmit` → exit 0, zero errors.
+- **Commit:** `Session 8 — café progression (Alo's repairs) + level-up celebration`
 
 **SESSION 7 LOG:**
 - **Audio assets** — no sound files existed and Metro can't bundle `require()`s to missing files, so synthesised tasteful SFX + a soft ambient pad from scratch. `scripts/gen_audio.py` (Python stdlib only, committed for reproducibility) writes `src/assets/sounds/{merge,spawn,levelup,sparkle,ambient}.wav` (mono 44.1kHz 16-bit). merge.wav = warm C5+E5 bell (the critical merge feel); ambient.wav = 8s seamless warm pad (partials snapped to 1/duration multiples so it loops click-free). All royalty-free, replaceable by same-named recordings later.

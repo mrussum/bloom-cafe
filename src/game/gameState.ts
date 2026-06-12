@@ -14,6 +14,7 @@ import {
   createBaseItem,
   findClearableCell,
 } from './spawner';
+import { cafeRepairReadiness, nextCafeStage } from './cafe';
 import type { Grid, GridItem, ItemCategory, ItemTier } from './types';
 
 const ROWS = 5;
@@ -71,6 +72,7 @@ interface GameState {
   autoSpawn: () => boolean;
   summonBrigadier: () => boolean;
   ensurePlayable: () => boolean;
+  repairCafe: () => boolean;
   clearStoryTrigger: () => void;
   setUserId: (id: string) => void;
   setHasRemovedAds: (val: boolean) => void;
@@ -177,6 +179,17 @@ export const useGameStore = create<GameState>()(
         }
         newGrid[pos[0]][pos[1]] = { ...rescue, isNew: true };
         set({ grid: newGrid, lastMergePosition: pos });
+        return true;
+      },
+
+      // Alo repairs the café — advances cafeLevel and plays his story beat.
+      // Only succeeds when the next stage's requirements are met.
+      repairCafe: () => {
+        const { cafeLevel, level, discoveredRecipes } = get();
+        const stage = nextCafeStage(cafeLevel);
+        if (!stage) return false;
+        if (!cafeRepairReadiness(stage, { level, discoveredRecipes }).ready) return false;
+        set({ cafeLevel: stage.level, pendingStoryTrigger: stage.npcTrigger });
         return true;
       },
 

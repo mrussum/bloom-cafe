@@ -22,10 +22,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useGameStore, BRIGADIER_COOLDOWN } from '../game/gameState';
 import { SPAWNABLE_INGREDIENTS, getNextGoal, recipeProgress } from '../game/spawner';
+import { cafeRepairReadiness, nextCafeStage } from '../game/cafe';
 import { MergeGrid } from '../components/MergeGrid';
 import { StoryToast } from '../components/StoryToast';
 import { RecipeBook } from '../components/RecipeBook';
 import { SettingsModal } from '../components/SettingsModal';
+import { CafeProgressModal } from '../components/CafeProgressModal';
+import { LevelUpOverlay } from '../components/LevelUpOverlay';
 import { supabase } from '../services/supabase';
 import { useSave } from '../hooks/useSave';
 import { useAudio } from '../hooks/useAudio';
@@ -41,6 +44,7 @@ export function CafeScreen() {
   const level = useGameStore((s) => s.level);
   const grid = useGameStore((s) => s.grid);
   const discoveredRecipes = useGameStore((s) => s.discoveredRecipes);
+  const cafeLevel = useGameStore((s) => s.cafeLevel);
   const mergeCount = useGameStore((s) => s.mergeCount);
   const lastBrigadierMerge = useGameStore((s) => s.lastBrigadierMerge);
   const spawnBase = useGameStore((s) => s.spawnBase);
@@ -55,6 +59,8 @@ export function CafeScreen() {
   const [shopOpen, setShopOpen] = useState(false);
   const [bookOpen, setBookOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [cafeOpen, setCafeOpen] = useState(false);
+  const [celebrationLevel, setCelebrationLevel] = useState<number | null>(null);
 
   // Anonymous auth — resolves existing session or creates a new one.
   // Fire-and-forget: game is fully playable while this resolves.
@@ -100,7 +106,7 @@ export function CafeScreen() {
       return;
     }
     if (level > prevLevel.current) {
-      void playSfx('levelup');
+      setCelebrationLevel(level); // overlay plays the chime + confetti
       void showInterstitial({ surface: 'levelup', hasRemovedAds });
     }
     prevLevel.current = level;
@@ -115,6 +121,12 @@ export function CafeScreen() {
   const { found, total } = recipeProgress(discoveredRecipes);
   const nextGoal = getNextGoal(discoveredRecipes);
   const brigadierHere = mergeCount - lastBrigadierMerge >= BRIGADIER_COOLDOWN;
+
+  // Is a café repair ready for Alo? (drives the 🔨 button's notification dot)
+  const nextStage = nextCafeStage(cafeLevel);
+  const repairReady = nextStage
+    ? cafeRepairReadiness(nextStage, { level, discoveredRecipes }).ready
+    : false;
 
   // Gentle pulse for the Brigadier so he draws the eye without nagging.
   const pulse = useSharedValue(1);
@@ -161,6 +173,10 @@ export function CafeScreen() {
               <View style={styles.levelBadge}>
                 <Text style={styles.levelText}>Lv {level}</Text>
               </View>
+              <Pressable onPress={() => setCafeOpen(true)} style={styles.iconButton}>
+                <Text style={styles.iconButtonText}>🔨</Text>
+                {repairReady ? <View style={styles.notifyDot} /> : null}
+              </Pressable>
               <Pressable onPress={() => setBookOpen(true)} style={styles.iconButton}>
                 <Text style={styles.iconButtonText}>📖</Text>
               </Pressable>
@@ -246,10 +262,14 @@ export function CafeScreen() {
       {/* Story toast — absolutely positioned, always mounted for smooth animation */}
       <StoryToast />
 
+      {/* Level-up celebration — above everything */}
+      <LevelUpOverlay level={celebrationLevel} onDone={() => setCelebrationLevel(null)} />
+
       {/* Modals */}
       <ShopScreen visible={shopOpen} onClose={() => setShopOpen(false)} />
       <RecipeBook visible={bookOpen} onClose={() => setBookOpen(false)} />
       <SettingsModal visible={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <CafeProgressModal visible={cafeOpen} onClose={() => setCafeOpen(false)} />
     </LinearGradient>
   );
 }
@@ -316,6 +336,17 @@ const styles = StyleSheet.create({
   },
   iconButtonText: {
     fontSize: 16,
+  },
+  notifyDot: {
+    position: 'absolute',
+    top: 1,
+    right: 1,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: '#E8704A',
+    borderWidth: 1,
+    borderColor: '#2D3B2D',
   },
   xpTrack: {
     flexDirection: 'row',

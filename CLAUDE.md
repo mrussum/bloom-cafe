@@ -103,10 +103,10 @@ BLOOM_ROWAN_OUTFIT_*   £0.99 each (character cosmetics)
 
 ### Current Build Status
 [ UPDATE THIS EACH SESSION ]
-- Phase: audio + feel / level-up moments
-- Last completed: audio.ts (expo-av — preloaded SFX + looping ambient pad), synthesised WAV assets (scripts/gen_audio.py → merge/spawn/levelup/sparkle/ambient), useAudio.ts hook, sound+music prefs in store, SettingsModal.tsx (⚙️ toggles), ads.ts ethical ad-trigger stub (level-up + shop-open only, respects remove-ads), merge/spawn/level-up/story SFX wired — zero TS errors
+- Phase: café progression / celebration moments
+- Last completed: cafe.ts (Alo's repairs gate cafeLevel 1→6, requirement-gated by player level + signature dishes), repairCafe() store action, 5 Alo repair dialogue beats, CafeProgressModal.tsx (🔨 with availability dot), LevelUpOverlay.tsx (full-screen confetti + chime celebration replacing the bare level-up SFX) — zero TS errors. Also hardened purchases.ts to degrade gracefully in Expo Go, added RUNNING.md
 - In progress: —
-- Next task: Session 8 — café progression (Alo's repairs gate cafeLevel upgrades) + a proper level-up celebration moment, then wire a real ad SDK into ads.ts
+- Next task: Session 9 — Trixie's friendship system (unlock new ingredient categories), then first-run onboarding + wire a real ad SDK into ads.ts
 
 ### Writing Style Guide
 - Warm but never saccharine
