@@ -23,11 +23,17 @@ import Animated, {
 import { useGameStore, BRIGADIER_COOLDOWN } from '../game/gameState';
 import { SPAWNABLE_INGREDIENTS, getNextGoal, recipeProgress } from '../game/spawner';
 import { cafeRepairReadiness, nextCafeStage } from '../game/cafe';
+import {
+  friendshipLevelFor,
+  nextFriendshipTier,
+  unlockedCategories,
+} from '../game/friendship';
 import { MergeGrid } from '../components/MergeGrid';
 import { StoryToast } from '../components/StoryToast';
 import { RecipeBook } from '../components/RecipeBook';
 import { SettingsModal } from '../components/SettingsModal';
 import { CafeProgressModal } from '../components/CafeProgressModal';
+import { TrixieModal } from '../components/TrixieModal';
 import { LevelUpOverlay } from '../components/LevelUpOverlay';
 import { supabase } from '../services/supabase';
 import { useSave } from '../hooks/useSave';
@@ -45,6 +51,7 @@ export function CafeScreen() {
   const grid = useGameStore((s) => s.grid);
   const discoveredRecipes = useGameStore((s) => s.discoveredRecipes);
   const cafeLevel = useGameStore((s) => s.cafeLevel);
+  const friendshipPoints = useGameStore((s) => s.friendshipPoints);
   const mergeCount = useGameStore((s) => s.mergeCount);
   const lastBrigadierMerge = useGameStore((s) => s.lastBrigadierMerge);
   const spawnBase = useGameStore((s) => s.spawnBase);
@@ -60,6 +67,7 @@ export function CafeScreen() {
   const [bookOpen, setBookOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [cafeOpen, setCafeOpen] = useState(false);
+  const [trixieOpen, setTrixieOpen] = useState(false);
   const [celebrationLevel, setCelebrationLevel] = useState<number | null>(null);
 
   // Anonymous auth — resolves existing session or creates a new one.
@@ -127,6 +135,13 @@ export function CafeScreen() {
   const repairReady = nextStage
     ? cafeRepairReadiness(nextStage, { level, discoveredRecipes }).ready
     : false;
+
+  // Trixie's friendship gates which ingredients the pantry offers.
+  const friendLevel = friendshipLevelFor(friendshipPoints);
+  const unlocked = unlockedCategories(friendLevel);
+  const pantry = SPAWNABLE_INGREDIENTS.filter((i) => unlocked.has(i.category));
+  const friendTier = nextFriendshipTier(friendLevel);
+  const dishesToUnlock = friendTier ? Math.max(0, friendTier.threshold - friendshipPoints) : 0;
 
   // Gentle pulse for the Brigadier so he draws the eye without nagging.
   const pulse = useSharedValue(1);
@@ -229,14 +244,25 @@ export function CafeScreen() {
           ) : null}
         </View>
 
-        {/* ── Pantry ── */}
+        {/* ── Trixie friendship strip ── */}
+        <Pressable onPress={() => setTrixieOpen(true)} style={styles.trixieStrip}>
+          <Text style={styles.trixieText} numberOfLines={1}>
+            💛 Trixie · Lv {friendLevel}
+            {friendTier
+              ? `  —  ${dishesToUnlock} dish${dishesToUnlock === 1 ? '' : 'es'} to ${friendTier.blurb}`
+              : '  —  every ingredient unlocked'}
+          </Text>
+          <Text style={styles.trixieChevron}>›</Text>
+        </Pressable>
+
+        {/* ── Pantry (gated by Trixie's friendship) ── */}
         <View style={styles.pantry}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.pantryRow}
           >
-            {SPAWNABLE_INGREDIENTS.map((ing) => (
+            {pantry.map((ing) => (
               <Pressable
                 key={ing.id}
                 style={({ pressed }) => [styles.chip, pressed && styles.chipPressed]}
@@ -246,6 +272,15 @@ export function CafeScreen() {
                 <Text style={styles.chipName}>{ing.displayName}</Text>
               </Pressable>
             ))}
+            {friendTier ? (
+              <Pressable
+                style={({ pressed }) => [styles.chip, styles.chipLocked, pressed && styles.chipPressed]}
+                onPress={() => setTrixieOpen(true)}
+              >
+                <Text style={styles.chipEmoji}>🔒</Text>
+                <Text style={styles.chipName}>more soon</Text>
+              </Pressable>
+            ) : null}
           </ScrollView>
 
           <Pressable
@@ -270,6 +305,7 @@ export function CafeScreen() {
       <RecipeBook visible={bookOpen} onClose={() => setBookOpen(false)} />
       <SettingsModal visible={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <CafeProgressModal visible={cafeOpen} onClose={() => setCafeOpen(false)} />
+      <TrixieModal visible={trixieOpen} onClose={() => setTrixieOpen(false)} />
     </LinearGradient>
   );
 }
@@ -450,11 +486,41 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // Trixie strip
+  trixieStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 2,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    backgroundColor: '#F7EEF7',
+    borderRadius: 12,
+  },
+  trixieText: {
+    flex: 1,
+    fontSize: 12,
+    color: '#8A5A8A',
+    fontWeight: '600',
+  },
+  trixieChevron: {
+    fontSize: 18,
+    color: '#C87CC8',
+    fontWeight: '700',
+    marginLeft: 8,
+  },
+
   // Pantry
   pantry: {
     paddingBottom: 24,
     paddingTop: 4,
     gap: 10,
+  },
+  chipLocked: {
+    opacity: 0.7,
+    backgroundColor: '#F2E8DC',
   },
   pantryRow: {
     paddingHorizontal: 16,

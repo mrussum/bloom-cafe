@@ -811,15 +811,26 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ **Session 7:** audio.ts + synthesised WAV assets, useAudio.ts, sound/music prefs, SettingsModal.tsx, ads.ts ethical trigger, SFX wired — zero TS errors
 - ✅ **Expo Go hardening:** purchases.ts degrades gracefully when RevenueCat native module / key is absent; RUNNING.md added
 - ✅ **Session 8:** cafe.ts (Alo's repairs gate cafeLevel), repairCafe action, 5 Alo beats, CafeProgressModal.tsx, LevelUpOverlay.tsx — zero TS errors
+- ✅ **Session 9:** friendship.ts (Trixie gates ingredient categories), pantry gating, TrixieModal.tsx + friendship strip, 3 Trixie beats — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
-**NEXT SESSION (Session 9):**
-- Trixie's friendship system — friendship levels unlock new ingredient categories (CLAUDE.md mechanic)
+**NEXT SESSION (Session 10):**
 - First-run onboarding — a gentle "drag two basil together" intro (no nag, skippable)
 - Real ad SDK — drop react-native-google-mobile-ads into ads.ts's showInterstitial()
 - Replace placeholder synth audio with recorded/produced café ambience + SFX (same filenames in src/assets/sounds/)
+
+**SESSION 9 LOG:**
+- `src/game/friendship.ts` (NEW, pure TS) — Trixie's friendship gates which ingredient *categories* the pantry offers. `FRIENDSHIP_TIERS`: Lv1 herbs+dry (start), Lv2 dairy (3 pts), Lv3 vegetable (7), Lv4 fruit (12). Points grow by 1 per *new recipe discovered* (a dish cooked with Trixie). Helpers: `friendshipLevelFor`, `nextFriendshipTier`, `friendshipTierTrigger`, `unlockedCategories`, `unlockedIngredientIds`.
+- `src/game/spawner.ts` — `chooseSmartSpawn` and `chooseRescueItem` now take an optional `allowedIds` and a shared `poolFor()` helper; everything restricts to unlocked ingredients (falls back to full set if a restriction would empty the pool, so the session-loop net can never stall).
+- `src/game/gameState.ts` — `friendshipPoints` (persisted + reset). `mergeItems` grows friendship on a new discovery and, on a level-up, plays Trixie's unlock beat (a recipe's own beat still takes priority). `spawnBase` refuses locked categories; `autoSpawn` + `ensurePlayable` pass the unlocked id list to the spawner. New starter grid (`basil`×2, `lavender`, `sugar`) offers two immediate merges entirely within the opening categories.
+- `src/game/npcs.ts` — 3 Trixie unlock beats (`trixie_friend_dairy/veg/fruit`) — chaotic-warm, cousin Dev, half an allotment, lemons "technically from a film set".
+- `src/components/TrixieModal.tsx` (NEW) — friendship surface: level, progress to next unlock, tier list (done ✓ / next / locked) with the category's ingredient emojis. Opened from a 💛 strip above the pantry; a 🔒 "more soon" pantry chip also opens it.
+- `src/screens/CafeScreen.tsx` — pantry now renders only `SPAWNABLE_INGREDIENTS` whose category is unlocked, plus the locked teaser chip; added the Trixie friendship strip and modal.
+- **Verified:** a node simulation confirmed the opening herb+dry pool yields exactly 3 discoverable recipes → reaches the dairy threshold → no early soft-lock; level boundaries 3/7/12 correct. `npx tsc --noEmit` → exit 0.
+- **Save migration note:** existing persisted saves rehydrate with `friendshipPoints: 0`, so returning testers start at friendship Lv1 (pantry narrows to herb+dry, expands again as they re-discover). Intended.
+- **Commit:** `Session 9 — Trixie's friendship system (ingredient category unlocks)`
 
 **SESSION 8 LOG:**
 - `src/game/cafe.ts` (NEW, pure TS) — café progression data + helpers. `CAFE_STAGES` defines repairs taking cafeLevel 1→6 (front door → display counter → coffee machine → garden wall → window table). Each `requires` a player level and/or a discovered dish, so Alo's repairs are genuinely gated by progress. `nextCafeStage(cafeLevel)` + `cafeRepairReadiness(stage, {level, discoveredRecipes})` → `{ ready, needs[] }` with human-readable requirement strings (dish names via `lookupType`). Threads the family through the building: the garden wall is Brigadier's (saffron buns gate it), the window corner is Linda's table (celebration cake gates it).

@@ -15,6 +15,12 @@ import {
   findClearableCell,
 } from './spawner';
 import { cafeRepairReadiness, nextCafeStage } from './cafe';
+import {
+  friendshipLevelFor,
+  friendshipTierTrigger,
+  unlockedCategories,
+  unlockedIngredientIds,
+} from './friendship';
 import type { Grid, GridItem, ItemCategory, ItemTier } from './types';
 
 const ROWS = 5;
@@ -29,9 +35,15 @@ function makeEmptyGrid(): Grid {
   return Array.from({ length: ROWS }, () => Array<GridItem | null>(COLS).fill(null));
 }
 
+// Starter grid uses only the opening categories (herbs & dry goods) and offers
+// two immediate merges: basil + basil, and lavender + sugar.
+const STARTER_GRID_ITEMS = ['basil', 'basil', 'lavender', 'sugar'];
+
 function makeInitialGrid(): Grid {
   const grid = makeEmptyGrid();
-  BASE_INGREDIENTS.slice(0, 4).forEach((ing, i) => {
+  STARTER_GRID_ITEMS.forEach((id, i) => {
+    const ing = BASE_INGREDIENTS.find((b) => b.id === id);
+    if (!ing) return;
     const r = Math.floor(i / COLS);
     const c = i % COLS;
     grid[r][c] = {
@@ -59,6 +71,8 @@ interface GameState {
   // mergeCount paces the Brigadier (and seeds future stats)
   mergeCount: number;
   lastBrigadierMerge: number;
+  // Trixie's friendship — grows with each recipe discovered, unlocks categories
+  friendshipPoints: number;
   // userId is session-only — managed by Supabase auth, not persisted here
   userId: string | null;
   // hasRemovedAds is persisted — survives app restarts
@@ -93,27 +107,38 @@ export const useGameStore = create<GameState>()(
       lastMergePosition: null,
       mergeCount: 0,
       lastBrigadierMerge: 0,
+      friendshipPoints: 0,
       userId: null,
       hasRemovedAds: false,
       soundEnabled: true,
       musicEnabled: true,
 
       mergeItems: (fromPos, toPos) => {
-        const { grid, xp, discoveredRecipes, mergeCount } = get();
+        const { grid, xp, discoveredRecipes, mergeCount, friendshipPoints } = get();
         const result = attemptMerge(grid, fromPos, toPos);
         if (!result) return false;
 
         const newXp = xp + result.xpGained;
-        const newDiscovered = discoveredRecipes.includes(result.mergedItem.type)
-          ? discoveredRecipes
-          : [...discoveredRecipes, result.mergedItem.type];
+        const isNewDiscovery = !discoveredRecipes.includes(result.mergedItem.type);
+        const newDiscovered = isNewDiscovery
+          ? [...discoveredRecipes, result.mergedItem.type]
+          : discoveredRecipes;
+
+        // Each new recipe is a dish cooked with Trixie — grows the friendship.
+        const newPoints = friendshipPoints + (isNewDiscovery ? 1 : 0);
+        const leveledUp = friendshipLevelFor(newPoints) > friendshipLevelFor(friendshipPoints);
+        const friendTrigger = leveledUp
+          ? friendshipTierTrigger(friendshipLevelFor(newPoints))
+          : undefined;
 
         set({
           grid: result.newGrid,
           xp: newXp,
           level: Math.floor(newXp / XP_PER_LEVEL) + 1,
           discoveredRecipes: newDiscovered,
-          pendingStoryTrigger: result.storyTrigger ?? null,
+          friendshipPoints: newPoints,
+          // A recipe's own beat takes priority; Trixie's unlock plays otherwise.
+          pendingStoryTrigger: result.storyTrigger ?? friendTrigger ?? null,
           lastMergePosition: result.newItemPosition,
           mergeCount: mergeCount + 1,
         });
@@ -131,18 +156,21 @@ export const useGameStore = create<GameState>()(
         return true;
       },
 
-      // Pantry tap — spawn a specific base ingredient.
+      // Pantry tap — spawn a specific base ingredient (if its category is unlocked).
       spawnBase: (ingredientId) => {
         const item = createBaseItem(ingredientId);
         if (!item) return false;
+        const unlocked = unlockedCategories(friendshipLevelFor(get().friendshipPoints));
+        if (!unlocked.has(item.category)) return false; // locked behind Trixie
         return get().spawnItem(item);
       },
 
-      // "Box of bits" — spawn a smart, mergeable-weighted base ingredient.
+      // "Box of bits" — spawn a smart, mergeable-weighted unlocked ingredient.
       autoSpawn: () => {
-        const { grid } = get();
+        const { grid, friendshipPoints } = get();
         if (!findEmptyCell(grid)) return false;
-        return get().spawnItem(chooseSmartSpawn(grid));
+        const allowed = unlockedIngredientIds(friendshipLevelFor(friendshipPoints));
+        return get().spawnItem(chooseSmartSpawn(grid, Math.random, allowed));
       },
 
       // Brigadier visits: drops rare saffron + a wordless flavour beat.
@@ -166,10 +194,11 @@ export const useGameStore = create<GameState>()(
       // Session-loop safety net: if nothing on the grid can merge, top it up
       // with a guaranteed-helpful ingredient so the player always has a move.
       ensurePlayable: () => {
-        const { grid } = get();
+        const { grid, friendshipPoints } = get();
         if (hasAvailableMerges(grid)) return false;
 
-        const rescue = chooseRescueItem(grid);
+        const allowed = unlockedIngredientIds(friendshipLevelFor(friendshipPoints));
+        const rescue = chooseRescueItem(grid, allowed);
         const newGrid: Grid = grid.map((row) => [...row]);
         let pos = findEmptyCell(grid);
         if (!pos) {
@@ -214,6 +243,7 @@ export const useGameStore = create<GameState>()(
           lastMergePosition: null,
           mergeCount: 0,
           lastBrigadierMerge: 0,
+          friendshipPoints: 0,
         }),
     }),
     {
@@ -230,6 +260,7 @@ export const useGameStore = create<GameState>()(
         lastMergePosition: state.lastMergePosition,
         mergeCount: state.mergeCount,
         lastBrigadierMerge: state.lastBrigadierMerge,
+        friendshipPoints: state.friendshipPoints,
         hasRemovedAds: state.hasRemovedAds, // persisted — survives restarts
         soundEnabled: state.soundEnabled,
         musicEnabled: state.musicEnabled,

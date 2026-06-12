@@ -103,10 +103,10 @@ BLOOM_ROWAN_OUTFIT_*   £0.99 each (character cosmetics)
 
 ### Current Build Status
 [ UPDATE THIS EACH SESSION ]
-- Phase: café progression / celebration moments
-- Last completed: cafe.ts (Alo's repairs gate cafeLevel 1→6, requirement-gated by player level + signature dishes), repairCafe() store action, 5 Alo repair dialogue beats, CafeProgressModal.tsx (🔨 with availability dot), LevelUpOverlay.tsx (full-screen confetti + chime celebration replacing the bare level-up SFX) — zero TS errors. Also hardened purchases.ts to degrade gracefully in Expo Go, added RUNNING.md
+- Phase: friendship progression / ingredient unlocks
+- Last completed: friendship.ts (Trixie's friendship gates ingredient categories — start herb+dry, unlock dairy→veg→fruit at 3/7/12 recipes discovered), friendshipPoints in store + pantry gating in spawnBase/autoSpawn/ensurePlayable, spawner allowed-pool support, starter grid (basil×2 + lavender + sugar), 3 Trixie unlock beats, TrixieModal.tsx + friendship strip above pantry — zero TS errors (progression verified: herb+dry yields exactly 3 discoveries → dairy unlock, no soft-lock)
 - In progress: —
-- Next task: Session 9 — Trixie's friendship system (unlock new ingredient categories), then first-run onboarding + wire a real ad SDK into ads.ts
+- Next task: Session 10 — first-run onboarding (gentle, skippable), then wire a real ad SDK (react-native-google-mobile-ads) into ads.ts; later replace placeholder synth audio with produced audio
 
 ### Writing Style Guide
 - Warm but never saccharine

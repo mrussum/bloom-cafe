@@ -44,6 +44,14 @@ function isSpawnableBase(type: string): boolean {
   return SPAWNABLE_INGREDIENTS.some((i) => i.id === type);
 }
 
+// Resolve the candidate ingredient pool, optionally restricted to unlocked ids.
+// Falls back to the full set if the restriction would leave nothing.
+function poolFor(allowedIds?: string[]) {
+  if (!allowedIds) return SPAWNABLE_INGREDIENTS;
+  const pool = SPAWNABLE_INGREDIENTS.filter((i) => allowedIds.includes(i.id));
+  return pool.length > 0 ? pool : SPAWNABLE_INGREDIENTS;
+}
+
 function typeCounts(grid: Grid): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const row of grid) {
@@ -55,11 +63,17 @@ function typeCounts(grid: Grid): Record<string, number> {
 }
 
 // ── Smart spawn — weighted toward ingredients that complete a pending merge ─
-export function chooseSmartSpawn(grid: Grid, rng: () => number = Math.random): GridItem {
+// `allowedIds` (when given) restricts the pool to currently-unlocked ingredients.
+export function chooseSmartSpawn(
+  grid: Grid,
+  rng: () => number = Math.random,
+  allowedIds?: string[],
+): GridItem {
   const counts = typeCounts(grid);
   const present = new Set(Object.keys(counts));
+  const pool = poolFor(allowedIds);
 
-  const weighted = SPAWNABLE_INGREDIENTS.map((ing) => {
+  const weighted = pool.map((ing) => {
     let weight = 1; // every spawnable ingredient always has a baseline chance
     for (const recipe of RECIPES) {
       const [a, b] = recipe.inputs;
@@ -89,25 +103,26 @@ export function chooseSmartSpawn(grid: Grid, rng: () => number = Math.random): G
 // possible. Picks the partner of something already on the grid where it can;
 // otherwise seeds a self-pairing ingredient so two consecutive rescues form a
 // pair (the caller fires this until hasAvailableMerges is satisfied).
-export function chooseRescueItem(grid: Grid): GridItem {
+export function chooseRescueItem(grid: Grid, allowedIds?: string[]): GridItem {
   const counts = typeCounts(grid);
   const present = new Set(Object.keys(counts));
+  const pool = poolFor(allowedIds);
+  const allowed = (id: string) => pool.some((i) => i.id === id);
 
   for (const recipe of RECIPES) {
     const [a, b] = recipe.inputs;
-    if (present.has(a) && isSpawnableBase(b) && (a !== b || (counts[a] ?? 0) >= 1)) {
+    if (present.has(a) && allowed(b) && (a !== b || (counts[a] ?? 0) >= 1)) {
       return createBaseItem(b)!;
     }
-    if (present.has(b) && isSpawnableBase(a) && (a !== b || (counts[b] ?? 0) >= 1)) {
+    if (present.has(b) && allowed(a) && (a !== b || (counts[b] ?? 0) >= 1)) {
       return createBaseItem(a)!;
     }
   }
 
-  // Nothing on the grid pairs with a base ingredient — seed a self-pairing one.
+  // Nothing on the grid pairs with an unlocked ingredient — seed a self-pairing one.
   const seed =
-    SPAWNABLE_INGREDIENTS.find((ing) =>
-      RECIPES.some((r) => r.inputs[0] === ing.id && r.inputs[1] === ing.id),
-    ) ?? SPAWNABLE_INGREDIENTS[0];
+    pool.find((ing) => RECIPES.some((r) => r.inputs[0] === ing.id && r.inputs[1] === ing.id)) ??
+    pool[0];
   return createBaseItem(seed.id)!;
 }
 

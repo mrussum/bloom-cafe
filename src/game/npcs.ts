@@ -57,6 +57,35 @@ export const DIALOGUE_BEATS: DialogueBeat[] = [
     ]
   },
 
+  // ── Trixie's friendship unlocks (new ingredient categories) ──
+  {
+    id: 'trixie_friend_dairy',
+    character: 'trixie',
+    lines: [
+      { speaker: 'trixie', text: "I found you a dairy guy. Well — it's my cousin Dev." },
+      { speaker: 'rowan', text: "Is Dev reliable?" },
+      { speaker: 'trixie', text: "Dev is enthusiastic. That's basically the same thing." },
+    ]
+  },
+  {
+    id: 'trixie_friend_veg',
+    character: 'trixie',
+    lines: [
+      { speaker: 'trixie', text: "The allotment said yes! We have a vegetable supply!" },
+      { speaker: 'rowan', text: "We have an allotment?" },
+      { speaker: 'trixie', text: "We have HALF an allotment. Mrs Patel has the other half and she is terrifying." },
+    ]
+  },
+  {
+    id: 'trixie_friend_fruit',
+    character: 'trixie',
+    lines: [
+      { speaker: 'trixie', text: "Lemons. A whole crate. Don't ask." },
+      { speaker: 'rowan', text: "I'm asking." },
+      { speaker: 'trixie', text: "...Okay so technically they're from a film set. They're fine." },
+    ]
+  },
+
   // ═══════════════════
   // ALO
   // ═══════════════════
