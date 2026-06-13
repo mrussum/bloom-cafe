@@ -807,15 +807,80 @@ These help the next Claude feel continuous rather than starting fresh:
 - ✅ **Supabase setup:** project created, .env written, .gitignore patched, all commits pushed to GitHub
 - ✅ **Session 4:** supabase.ts, useSave.ts, gameState userId, CafeScreen auth — zero TS errors
 - ✅ **Session 5:** purchases.ts, ShopScreen.tsx, hasRemovedAds, RevenueCat wired — zero TS errors
+- ✅ **Session 6:** spawner.ts, full pantry, ensurePlayable session loop, RecipeBook.tsx, Brigadier tap-to-summon — zero TS errors
+- ✅ **Session 7:** audio.ts + synthesised WAV assets, useAudio.ts, sound/music prefs, SettingsModal.tsx, ads.ts ethical trigger, SFX wired — zero TS errors
+- ✅ **Expo Go hardening:** purchases.ts degrades gracefully when RevenueCat native module / key is absent; RUNNING.md added
+- ✅ **Session 8:** cafe.ts (Alo's repairs gate cafeLevel), repairCafe action, 5 Alo beats, CafeProgressModal.tsx, LevelUpOverlay.tsx — zero TS errors
+- ✅ **Session 9:** friendship.ts (Trixie gates ingredient categories), pantry gating, TrixieModal.tsx + friendship strip, 3 Trixie beats — zero TS errors
+- ✅ **Session 10:** OnboardingOverlay.tsx (gentle skippable first-run intro), hasOnboarded flag, "Replay intro" in settings — zero TS errors
 
 **IN PROGRESS:**
 - 📱 Awaiting Annie's response to co-founder proposal
 
-**NEXT SESSION (Session 6):**
-- Spawner logic — smarter ingredient spawning (weighted by what's mergeable)
-- Session loop — ensure player always has something to do
-- Recipe discovery tracking UI — show discovered/total count
-- Brigadier mechanic — tap to spawn rare ingredient (saffron)
+**NEXT SESSION (Session 11):**
+- Real ad SDK — drop react-native-google-mobile-ads into ads.ts's showInterstitial() (needs a dev build + AdMob app/unit IDs; deliberately deferred until those exist)
+- Replace placeholder synth audio with recorded/produced café ambience + SFX (same filenames in src/assets/sounds/)
+- First art pass — replace emoji items with produced ingredient/dish art
+
+**SESSION 10 LOG:**
+- `src/game/gameState.ts` — `hasOnboarded: boolean` (default false, persisted, with `setHasOnboarded`). Intentionally NOT cleared by `resetGame` — it's a one-time UX flag, not game progress.
+- `src/components/OnboardingOverlay.tsx` (NEW) — three warm cards over a scrim: (1) welcome / who Rowan + Linda are, (2) the merge mechanic with a `🌿 ➕ 🌿 → 🫙` demo, (3) the pantry + Trixie. Reanimated entrance (scrim fade + card spring) and a cross-fade on each step change; step dots; a primary Next / "Let's open up 🐰" button and a Skip that jumps straight to the end. Plays the sparkle SFX on finish. `zIndex: 100` so it sits above the level-up overlay; always skippable (ethical — no forced tutorial).
+- `src/screens/CafeScreen.tsx` — renders `<OnboardingOverlay>` while `!hasOnboarded`; `onDone` sets the flag so it never reappears.
+- `src/components/SettingsModal.tsx` — added a "Replay intro" action row (sets `hasOnboarded` false + closes) so players (and testers) can see the welcome again.
+- **Ad SDK deferred (deliberate):** `react-native-google-mobile-ads` is a native module needing a dev build + an `app.json` config plugin + a real AdMob account/app+unit IDs (none of which exist yet) and can't run in Expo Go or be tested here. `ads.ts` already exposes the exact drop-in seam. Wiring it blind would risk the build for no testable gain — so it stays in Session 11.
+- **Result:** `npx tsc --noEmit` → exit 0, zero errors.
+- **Commit:** `Session 10 — gentle first-run onboarding`
+
+**SESSION 9 LOG:**
+- `src/game/friendship.ts` (NEW, pure TS) — Trixie's friendship gates which ingredient *categories* the pantry offers. `FRIENDSHIP_TIERS`: Lv1 herbs+dry (start), Lv2 dairy (3 pts), Lv3 vegetable (7), Lv4 fruit (12). Points grow by 1 per *new recipe discovered* (a dish cooked with Trixie). Helpers: `friendshipLevelFor`, `nextFriendshipTier`, `friendshipTierTrigger`, `unlockedCategories`, `unlockedIngredientIds`.
+- `src/game/spawner.ts` — `chooseSmartSpawn` and `chooseRescueItem` now take an optional `allowedIds` and a shared `poolFor()` helper; everything restricts to unlocked ingredients (falls back to full set if a restriction would empty the pool, so the session-loop net can never stall).
+- `src/game/gameState.ts` — `friendshipPoints` (persisted + reset). `mergeItems` grows friendship on a new discovery and, on a level-up, plays Trixie's unlock beat (a recipe's own beat still takes priority). `spawnBase` refuses locked categories; `autoSpawn` + `ensurePlayable` pass the unlocked id list to the spawner. New starter grid (`basil`×2, `lavender`, `sugar`) offers two immediate merges entirely within the opening categories.
+- `src/game/npcs.ts` — 3 Trixie unlock beats (`trixie_friend_dairy/veg/fruit`) — chaotic-warm, cousin Dev, half an allotment, lemons "technically from a film set".
+- `src/components/TrixieModal.tsx` (NEW) — friendship surface: level, progress to next unlock, tier list (done ✓ / next / locked) with the category's ingredient emojis. Opened from a 💛 strip above the pantry; a 🔒 "more soon" pantry chip also opens it.
+- `src/screens/CafeScreen.tsx` — pantry now renders only `SPAWNABLE_INGREDIENTS` whose category is unlocked, plus the locked teaser chip; added the Trixie friendship strip and modal.
+- **Verified:** a node simulation confirmed the opening herb+dry pool yields exactly 3 discoverable recipes → reaches the dairy threshold → no early soft-lock; level boundaries 3/7/12 correct. `npx tsc --noEmit` → exit 0.
+- **Save migration note:** existing persisted saves rehydrate with `friendshipPoints: 0`, so returning testers start at friendship Lv1 (pantry narrows to herb+dry, expands again as they re-discover). Intended.
+- **Commit:** `Session 9 — Trixie's friendship system (ingredient category unlocks)`
+
+**SESSION 8 LOG:**
+- `src/game/cafe.ts` (NEW, pure TS) — café progression data + helpers. `CAFE_STAGES` defines repairs taking cafeLevel 1→6 (front door → display counter → coffee machine → garden wall → window table). Each `requires` a player level and/or a discovered dish, so Alo's repairs are genuinely gated by progress. `nextCafeStage(cafeLevel)` + `cafeRepairReadiness(stage, {level, discoveredRecipes})` → `{ ready, needs[] }` with human-readable requirement strings (dish names via `lookupType`). Threads the family through the building: the garden wall is Brigadier's (saffron buns gate it), the window corner is Linda's table (celebration cake gates it).
+- `src/game/gameState.ts` — `repairCafe()` action: finds the next stage, checks readiness, advances `cafeLevel`, and sets the Alo story beat. `cafeLevel` was already persisted/reset — now it finally means something.
+- `src/game/npcs.ts` — 5 Alo repair beats (`cafe_repair_door/counter/coffee/wall/window`). Terse, dry, warm underneath; the wall beat ties back to Brigadier's feathers, the window beat to Linda's table.
+- `src/components/CafeProgressModal.tsx` (NEW) — Alo's repair list. Completed repairs show a green ✓, the next shows either an "Ask Alo to fix it" button (when ready) or a "waiting on" checklist, later repairs stay 🔒 "???". Repairing closes the modal so Alo's story toast plays.
+- `src/components/LevelUpOverlay.tsx` (NEW) — full-screen celebration replacing the bare chime: a card springs in over a scrim, 8 confetti emoji drift down (Reanimated), the level-up chime plays, a warm rotating message shows. Auto-dismisses after ~2.3s or on tap. `pointerEvents` gated so it never blocks play when hidden.
+- `src/screens/CafeScreen.tsx` — added a 🔨 header button (with an orange notification dot when a repair is ready) opening the café modal; the level-up effect now drives `LevelUpOverlay` (which owns the chime) while still firing the ethical interstitial; `celebrationLevel` state added.
+- **Note:** import order is clean (cafe → spawner → recipes; no cycle with gameState). `npx tsc --noEmit` → exit 0, zero errors.
+- **Commit:** `Session 8 — café progression (Alo's repairs) + level-up celebration`
+
+**SESSION 7 LOG:**
+- **Audio assets** — no sound files existed and Metro can't bundle `require()`s to missing files, so synthesised tasteful SFX + a soft ambient pad from scratch. `scripts/gen_audio.py` (Python stdlib only, committed for reproducibility) writes `src/assets/sounds/{merge,spawn,levelup,sparkle,ambient}.wav` (mono 44.1kHz 16-bit). merge.wav = warm C5+E5 bell (the critical merge feel); ambient.wav = 8s seamless warm pad (partials snapped to 1/duration multiples so it loops click-free). All royalty-free, replaceable by same-named recordings later.
+- `src/services/audio.ts` (NEW) — pure playback wrapper over expo-av. `initAudio()` sets the audio session (`playsInSilentModeIOS`, `shouldDuckAndroid`) and preloads SFX. `playSfx(name)` replays a preloaded one-shot. `startAmbient()/stopAmbient()` manage the looping pad. `setSfxEnabled/setMusicEnabled` honour prefs. Every call degrades silently on failure (never blocks play). Knows nothing about game state.
+- `src/hooks/useAudio.ts` (NEW) — bridges store prefs → service, starts ambient after init, and pauses/resumes ambient on AppState background/active. Mounted in CafeScreen.
+- `src/services/ads.ts` (NEW) — ethical ad trigger. `showInterstitial({surface, hasRemovedAds})` only fires on `'levelup'` / `'shop_open'`, always respects the remove-ads entitlement, and warns on any disallowed surface. No ad SDK yet — graceful placeholder with the real call sites + guarantees already wired (react-native-google-mobile-ads slots into the TODO).
+- `src/game/gameState.ts` — `soundEnabled` + `musicEnabled` (default true, persisted) with `setSoundEnabled/setMusicEnabled`. `resetGame` intentionally leaves prefs + entitlements alone.
+- `src/components/SettingsModal.tsx` (NEW) — ⚙️ modal with Sound + Music `Switch`es. Ethical copy, both on by default.
+- `src/components/MergeGrid.tsx` — `playSfx('merge')` on a successful merge (sits alongside the existing medium haptic).
+- `src/components/StoryToast.tsx` — `playSfx('sparkle')` when a story beat slides in (covers Brigadier's saffron visit too).
+- `src/screens/CafeScreen.tsx` — `useAudio()` wired; spawn/box buttons play `'spawn'`; a `prevLevel` ref detects level-ups → `playSfx('levelup')` + `showInterstitial({surface:'levelup'})` (skips first render so loading a saved level never fires an ad); ⚙️ settings button added; shop opens via `openShop()` which also triggers the shop-open ad. Title set to `numberOfLines={1}` + `flexShrink` so four header icons never overflow.
+- **Note:** `wav` is in Metro's default `assetExts`, so the requires bundle without config changes. `npx tsc --noEmit` → exit 0, zero errors.
+- **Commit:** `Session 7 — audio pass: SFX + ambient, settings, ethical ad triggers`
+
+**SESSION 6 LOG:**
+- `src/game/recipes.ts` — added `BaseIngredient` interface (typed `BASE_INGREDIENTS`, with `brigadierOnly?`) so the spawner can filter Brigadier-only items under strict mode.
+- `src/game/spawner.ts` (NEW, pure TS — zero React) — the content-pass brain:
+  - `SPAWNABLE_INGREDIENTS` = all base ingredients except saffron (Brigadier-only).
+  - `createBaseItem(id)` — single source of truth for building a base GridItem (de-duplicates the old inline builders in gameState + CafeScreen).
+  - `chooseSmartSpawn(grid, rng?)` — weighted random; +4 weight per ingredient that would immediately complete a merge given what's already on the grid ("weighted by what's mergeable"). RNG injectable for future tests.
+  - `chooseRescueItem(grid)` — returns a base ingredient guaranteed to make a merge possible (partner of something present, else a self-pairing seed). Terminates in ≤2 spawns even on an adversarial full-orphan grid.
+  - `findClearableCell(grid)` — lowest-tier cell, used only to break a true full-grid deadlock.
+  - `recipeProgress(discovered)` → `{ found, total }`; `getNextGoal(discovered)` → next actionable (or lowest-tier) undiscovered recipe; `lookupType(type)` → `{ emoji, name }` for any item type.
+- `src/game/gameState.ts` — `mergeCount` + `lastBrigadierMerge` added (persisted). New actions: `spawnBase(id)`, `autoSpawn()` (smart weighted), `summonBrigadier()` (drops saffron + sets `brigadier_visit` beat + resets cooldown), `ensurePlayable()` (session-loop net — no-ops when a merge exists, else tops up with a rescue item, freeing a low-tier cell if the grid is full). `mergeItems` now increments `mergeCount`. `spawnItem` now records `lastMergePosition`. Exported `BRIGADIER_COOLDOWN = 3` (progress-gated, NOT a real-time timer — keeps the ethical "no timers" rule).
+- `src/game/npcs.ts` — added `brigadier_visit` beat (action-only, two lines, hat slightly askew — he never speaks).
+- `src/components/RecipeBook.tsx` (NEW) — Modal discovery tracker. Recipes grouped by tier with coloured dots; discovered cards show emoji + name + input emojis, undiscovered stay 🔒 "???". Header shows `found/total`. Matches ShopScreen's modal style.
+- `src/screens/CafeScreen.tsx` — replaced the 3 fixed spawn buttons with a horizontal **pantry** of ALL 9 base ingredients (this is what finally makes every recipe craftable/discoverable). Added: 📖 Recipe Book header button, a tappable **goal hint banner** (`getNextGoal`) with the `found/total` count, a **🧺 Box of bits** smart-spawn button, the **Brigadier** (🐒, gentle Reanimated pulse) that appears over the grid once `mergeCount - lastBrigadierMerge >= BRIGADIER_COOLDOWN` and drops saffron on tap, and a `useEffect([grid])` that calls `ensurePlayable()` so the player can never hit a dead end.
+- **Design note:** the pantry (full player choice) is the primary input; `chooseSmartSpawn` powers the optional Box of bits; `ensurePlayable` only intervenes when the grid genuinely can't move — preserving player agency while guaranteeing the session loop. Architecture rules held: `src/game/` stayed pure TS, all mutation via store actions, no real-time timers.
+- **Result:** `npx tsc --noEmit` → exit 0, zero errors. (Note: `node_modules` was absent in a fresh container — ran `npm install` first.)
+- **Commit:** `Session 6 — content pass: spawner, session loop, recipe book, Brigadier`
 
 **SESSION 5 LOG:**
 - `react-native-purchases` installed via `npx expo install`

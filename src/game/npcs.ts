@@ -57,6 +57,35 @@ export const DIALOGUE_BEATS: DialogueBeat[] = [
     ]
   },
 
+  // ── Trixie's friendship unlocks (new ingredient categories) ──
+  {
+    id: 'trixie_friend_dairy',
+    character: 'trixie',
+    lines: [
+      { speaker: 'trixie', text: "I found you a dairy guy. Well — it's my cousin Dev." },
+      { speaker: 'rowan', text: "Is Dev reliable?" },
+      { speaker: 'trixie', text: "Dev is enthusiastic. That's basically the same thing." },
+    ]
+  },
+  {
+    id: 'trixie_friend_veg',
+    character: 'trixie',
+    lines: [
+      { speaker: 'trixie', text: "The allotment said yes! We have a vegetable supply!" },
+      { speaker: 'rowan', text: "We have an allotment?" },
+      { speaker: 'trixie', text: "We have HALF an allotment. Mrs Patel has the other half and she is terrifying." },
+    ]
+  },
+  {
+    id: 'trixie_friend_fruit',
+    character: 'trixie',
+    lines: [
+      { speaker: 'trixie', text: "Lemons. A whole crate. Don't ask." },
+      { speaker: 'rowan', text: "I'm asking." },
+      { speaker: 'trixie', text: "...Okay so technically they're from a film set. They're fine." },
+    ]
+  },
+
   // ═══════════════════
   // ALO
   // ═══════════════════
@@ -100,6 +129,54 @@ export const DIALOGUE_BEATS: DialogueBeat[] = [
       { speaker: 'alo', text: "Anyway. The grease trap needs cleaning." },
       { speaker: 'rowan', text: "[pause]", isAction: true },
       { speaker: 'rowan', text: "Thanks, Alo." },
+    ]
+  },
+
+  // ── Alo's café repairs (gate cafeLevel upgrades) ──
+  {
+    id: 'cafe_repair_door',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "Door's been sticking for years. Two minutes with a plane." },
+      { speaker: 'rowan', text: "You knew the whole time?" },
+      { speaker: 'alo', text: "Someone had to." },
+    ]
+  },
+  {
+    id: 'cafe_repair_counter',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "[runs a hand along the rebuilt counter]", isAction: true },
+      { speaker: 'alo', text: "Won't wobble when Linda leans on it now." },
+      { speaker: 'rowan', text: "She'll notice." },
+      { speaker: 'alo', text: "She notices everything." },
+    ]
+  },
+  {
+    id: 'cafe_repair_coffee',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "Machine's older than you." },
+      { speaker: 'rowan', text: "Can you fix it?" },
+      { speaker: 'alo', text: "Already did. Don't tell it I said its age." },
+    ]
+  },
+  {
+    id: 'cafe_repair_wall',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "Rebuilt the garden wall. Found three feathers in the gap." },
+      { speaker: 'rowan', text: "Brigadier's." },
+      { speaker: 'alo', text: "[sets the feathers on the sill, says nothing]", isAction: true },
+    ]
+  },
+  {
+    id: 'cafe_repair_window',
+    character: 'alo',
+    lines: [
+      { speaker: 'alo', text: "Cleared the window corner. Mum's table fits there again." },
+      { speaker: 'rowan', text: "...Yeah. It does." },
+      { speaker: 'alo', text: "Thought you'd want to know." },
     ]
   },
 
@@ -208,6 +285,14 @@ export const DIALOGUE_BEATS: DialogueBeat[] = [
   // BRIGADIER (Monkeyoji)
   // — always isAction, never speech
   // ═══════════════════
+  {
+    id: 'brigadier_visit',
+    character: 'brigadier',
+    lines: [
+      { speaker: 'brigadier', text: "Brigadier is on the windowsill, hat slightly askew. He sets down a single thread of saffron with enormous ceremony.", isAction: true },
+      { speaker: 'brigadier', text: "He looks at the saffron. He looks at you. He adjusts the hat, and ambles back over the garden wall.", isAction: true },
+    ]
+  },
   {
     id: 'brigadier_saffron_watch',
     character: 'brigadier',

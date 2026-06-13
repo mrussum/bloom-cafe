@@ -103,10 +103,10 @@ BLOOM_ROWAN_OUTFIT_*   £0.99 each (character cosmetics)
 
 ### Current Build Status
 [ UPDATE THIS EACH SESSION ]
-- Phase: IAP / monetisation
-- Last completed: purchases.ts (RevenueCat wrapper), ShopScreen.tsx (modal shop), hasRemovedAds in store, shop wired into CafeScreen — zero TS errors
+- Phase: onboarding / first-run polish
+- Last completed: OnboardingOverlay.tsx (gentle 3-step, skippable first-run intro teaching the merge mechanic), hasOnboarded flag in store (persisted), "Replay intro" action in SettingsModal — zero TS errors
 - In progress: —
-- Next task: Session 6 — content pass (all recipes discoverable, spawner logic, session loop)
+- Next task: Session 11 — wire a real ad SDK (react-native-google-mobile-ads) into ads.ts once a dev build + AdMob account exist; replace placeholder synth audio with produced audio; first art pass
 
 ### Writing Style Guide
 - Warm but never saccharine

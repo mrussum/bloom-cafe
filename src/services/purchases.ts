@@ -20,16 +20,29 @@ const REVENUECAT_KEY =
     ? (process.env.EXPO_PUBLIC_REVENUECAT_KEY_IOS ?? '')
     : (process.env.EXPO_PUBLIC_REVENUECAT_KEY_ANDROID ?? '');
 
+// True only after a successful configure(). Stays false in Expo Go (where the
+// RevenueCat native module is absent) or when no API key is set — so the rest
+// of the IAP layer no-ops cleanly instead of crashing the app on launch.
+let purchasesAvailable = false;
+
 // ─── Initialise once on app start ────────────────────────────────────────────
 
 export function initPurchases() {
-  Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.WARN);
-  Purchases.configure({ apiKey: REVENUECAT_KEY });
+  try {
+    Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.WARN);
+    Purchases.configure({ apiKey: REVENUECAT_KEY });
+    purchasesAvailable = true;
+  } catch (err) {
+    purchasesAvailable = false;
+    // Expected in Expo Go / without a dev build — IAP simply stays off.
+    console.warn('[bloom] RevenueCat unavailable — in-app purchases disabled:', err);
+  }
 }
 
 // ─── Check entitlements ───────────────────────────────────────────────────────
 
 export async function checkRemoveAds(): Promise<boolean> {
+  if (!purchasesAvailable) return false;
   try {
     const info = await Purchases.getCustomerInfo();
     return !!info.entitlements.active['remove_ads'];
@@ -41,6 +54,7 @@ export async function checkRemoveAds(): Promise<boolean> {
 // ─── Fetch current offering ───────────────────────────────────────────────────
 
 export async function fetchOfferings() {
+  if (!purchasesAvailable) return null;
   try {
     return await Purchases.getOfferings();
   } catch {
@@ -56,6 +70,7 @@ export interface PurchaseResult {
 }
 
 export async function purchasePackage(pkg: PurchasesPackage): Promise<PurchaseResult> {
+  if (!purchasesAvailable) return { success: false, hasRemovedAds: false };
   try {
     const { customerInfo } = await Purchases.purchasePackage(pkg);
     return {
@@ -80,6 +95,7 @@ export async function purchasePackage(pkg: PurchasesPackage): Promise<PurchaseRe
 // ─── Restore purchases ────────────────────────────────────────────────────────
 
 export async function restorePurchases(): Promise<boolean> {
+  if (!purchasesAvailable) return false;
   try {
     const info = await Purchases.restorePurchases();
     return !!info.entitlements.active['remove_ads'];

@@ -7,6 +7,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useSharedValue } from 'react-native-reanimated';
 import { useGameStore } from '../game/gameState';
+import { playSfx } from '../services/audio';
 import { MergeCell } from './MergeCell';
 
 const COLS = 4;
@@ -41,6 +42,7 @@ export function MergeGrid() {
       const success = mergeItems(fromPos, toPos);
       if (success) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+        void playSfx('merge');
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
       }
